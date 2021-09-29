@@ -1,0 +1,21 @@
+@import "style.css";
+@import "adaptive.css";
+
+body, html {
+	height: 100%;
+	padding: 0;
+	margin: 0;
+}
+a {
+	text-decoration: none;
+	color: black;
+}
+
+@font-face {
+	font-family: "Harabara Bold";
+	src: url("./../fonts/KFOmCnqEu92Fr1Mu4mxKKTU1Kg.woff2") format("woff")
+}
+@font-face {
+	font-family: "Harabara";
+	src: url("./../fonts/KFOlCnqEu92Fr1MmSU5fBBc4AMP6lQ.woff2") format("woff")
+}

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daniel Lee</title>
+    <link rel="icon" href="static/images/favicon.png" sizes="32x32">
+    <link rel="stylesheet" href="static/css/main.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/2.0.2/anime.min.js"></script>
+</head>
+
+<body>
+    <div class="left">
+        <div class="left-content">
+            <div class="left-wrapper">
+
+                <div class="img-wrapper">
+                    <img src="static/images/avatar.jpeg">
+                </div>
+                <div class="name-text">D A N I E L</div>
+                <div class="position-text">Software Engineer</div>
+
+            </div>
+        </div>
+    </div>
+    <div class="right">
+        <div class="right-content">
+            <div class="right-wrapper">
+                <div class="social-networks">
+                    <a href="https://instagram.com/lee_daniil/">
+                        <div class="link"><img src="static/images/social networks/instagram.png" alt="Instagram"></div>
+                    </a>
+                    <a href="https://t.me/leedaniil">
+                        <div class="link"><img src="static/images/social networks/telegram.png" alt="Telegram"></div>
+                    </a>
+                    <a href="static/resumes/resume.pdf" download>
+                        <div class="link"><img src="static/images/social networks/resume.png" alt="Resume"></div>
+                    </a>
+                    <a href="https://github.com/leedaniil">
+                        <div class="link"><img src="static/images/social networks/github.png" alt="Github"></div>
+                    </a>
+                    <a href="https://www.linkedin.com/in/leedaniil">
+                        <div class="link"><img src="static/images/social networks/linkedin.png" alt="Linkedin"></div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    function typeIt(className) {
+
+        let textWrapper = document.querySelector(className);
+        textWrapper.innerHTML = textWrapper.textContent.replace(/\S/g, "<span class='letter'>$&</span>");
+        anime.timeline({ loop: false })
+            .add({
+                targets: `${className} .letter`,
+                opacity: [0, 1],
+                easing: "easeInOutQuad",
+                duration: 2250,
+                delay: (el, i) => 150 * (i + 1)
+            });
+    }
+
+    typeIt('.name-text')
+    typeIt('.position-text')
+    typeIt('.about')
+</script>
+
+</html>

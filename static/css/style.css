@@ -1,0 +1,41 @@
+/* LEFT SIDE */
+.img-wrapper {
+	width: 70%;
+	margin: auto;
+}
+.img-wrapper img {
+	width: 100%;
+	border-radius: 50%;
+	border: 5px solid white;
+}
+.name-text {
+	margin-top: 5vh;
+	font-size: calc(0.6em + 5vmin);
+	text-align: center;
+	font-family: "Harabara Bold";
+}
+.position-text {
+	margin-top: 2vh;
+	font-size: calc(0.5em + 2vmin);
+	text-align: center;
+	font-family: "Harabara";
+}
+
+/* RIGHT SIDE */
+.about {
+	margin: auto;
+	margin-bottom: 3vh;
+	font-family: "Harabara Bold";
+	font-size: 5vh;
+	text-align: center;
+}
+.social-networks {
+	margin-top: 3vh;
+	
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+}
+.social-networks .link img {
+	width: 5vh;
+}
