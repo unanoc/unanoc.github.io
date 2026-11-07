@@ -15,7 +15,7 @@ export const profile: Profile = {
 export const clockMoods: ClockMood[] = [
   { from: 0, text: 'ночной деплой, пока все спят' },
   { from: 6, text: 'кофе и чистый git status' },
-  { from: 10, text: 'в потоке, пишу код' },
+  { from: 10, text: 'в потоке, собираю новую фичу' },
   { from: 13, text: 'обед, но в голове баги' },
   { from: 15, text: 'двигаю пиксели на 1pt' },
   { from: 19, text: 'читаю отзывы в App Store' },
