@@ -1,4 +1,4 @@
-import type { ClockMood, Profile } from '@/types/content'
+import type { ClockMood, Profile, Role } from '@/types/content'
 
 export const profile: Profile = {
   name: 'Daniel',
@@ -7,10 +7,14 @@ export const profile: Profile = {
   country: 'South Korea',
   flag: '🇰🇷',
   timezone: 'Asia/Seoul',
-  soloSince: '2026-07-10T02:41:00+09:00',
   bio: 'Придумываю и выпускаю приложения, которыми сам пользуюсь каждый день.',
   cta: { label: 'Подписаться', hint: 'Пишу раз в неделю. Без спама.' },
 }
+
+export const roles: Role[] = [
+  { title: 'Senior Software Engineer', note: 'full-time', since: '2019-05-20T09:00:00+09:00' },
+  { title: 'Соло-разработчик', note: 'Trexp', since: '2026-07-10T02:41:00+09:00' },
+]
 
 export const clockMoods: ClockMood[] = [
   { from: 0, text: 'ночной деплой, пока все спят' },

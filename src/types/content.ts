@@ -33,9 +33,15 @@ export type Profile = {
   country: string
   flag: string
   timezone: string
-  soloSince: string
   bio: string
   cta: { label: string; hint: string }
+}
+
+export type Role = {
+  title: string
+  note?: string
+  since: string
+  until?: string
 }
 
 export type ClockMood = { from: number; text: string }
