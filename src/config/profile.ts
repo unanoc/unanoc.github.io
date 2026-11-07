@@ -12,8 +12,8 @@ export const profile: Profile = {
 }
 
 export const roles: Role[] = [
-  { title: 'Senior Software Engineer', note: 'full-time', since: '2019-05-20T09:00:00+09:00' },
-  { title: 'Соло-разработчик', note: 'Trexp', since: '2026-07-10T02:41:00+09:00' },
+  { title: 'Senior Software Engineer', note: 'full-time', since: '2019-05-14T09:00:00+09:00' },
+  { title: 'Соло-разработчик', since: '2026-07-10T02:41:00+09:00' },
 ]
 
 export const clockMoods: ClockMood[] = [
