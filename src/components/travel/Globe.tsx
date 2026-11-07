@@ -4,6 +4,7 @@ import { animate, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { feature, mesh } from 'topojson-client'
 import { cn } from '@/lib/cn'
+import { loadFlag } from '@/lib/flags'
 import type { GeometryCollection, Topology } from 'topojson-specification'
 import coarseUrl from 'world-atlas/countries-110m.json?url'
 import fineUrl from 'world-atlas/countries-50m.json?url'
@@ -16,6 +17,13 @@ export type GlobeMarker = {
   active?: boolean
 }
 
+export type GlobeFlag = {
+  code: string
+  numericId: string
+  lat: number
+  lng: number
+}
+
 export type GlobeFocus = { lat: number; lng: number; zoom: number }
 
 type GlobeProps = {
@@ -24,21 +32,34 @@ type GlobeProps = {
   selected?: string
   focus: GlobeFocus | null
   markers: GlobeMarker[]
+  flags: GlobeFlag[]
   onCountryClick: (numericId: string) => void
 }
 
 type World = { countries: Feature[]; borders: MultiLineString }
 
-type Palette = Record<'sea' | 'land' | 'border' | 'visited' | 'selected' | 'marker' | 'label' | 'halo' | 'grid', string>
+type Palette = Record<'sea' | 'seaHi' | 'rim' | 'land' | 'border' | 'visited' | 'selected' | 'core' | 'label' | 'halo' | 'grid', string>
 
 const DETAIL_ZOOM = 2.2
 const AUTO_SPIN_DEG_PER_MS = 0.006
 const DRAG_DEG_PER_PX = 0.3
 const CLICK_SLOP_PX = 4
-const SPIN_RESUME_MS = 4000
+const SPIN_RESUME_MS = 1500
 const FLY_SECONDS = 1.1
 const IDLE_TILT = 18
 const LABEL_HEIGHT = 13
+const FLAG_W = 24
+const FLAG_H = 16
+const FLAG_HIT = 16
+const FLAG_NUDGES: [number, number][] = [
+  [0, 0],
+  [0, -21],
+  [0, 21],
+  [28, 0],
+  [-28, 0],
+  [28, -21],
+  [-28, 21],
+]
 const LABEL_SPOTS: [number, number, 'left' | 'right'][] = [
   [8, 0, 'left'],
   [-8, 0, 'right'],
@@ -75,14 +96,16 @@ function readPalette(): Palette {
 
   return {
     sea: v('--globe-sea'),
+    seaHi: v('--globe-sea-hi'),
+    rim: v('--globe-rim'),
     land: v('--globe-land'),
     border: v('--globe-border'),
     visited: v('--globe-visited'),
     selected: v('--accent'),
-    marker: v('--ink'),
+    core: v('--globe-core'),
     label: v('--ink'),
     halo: v('--bg'),
-    grid: v('--line'),
+    grid: v('--globe-grid'),
   }
 }
 
@@ -99,7 +122,7 @@ function usePalette() {
   return palette
 }
 
-export function Globe({ label, visited, selected, focus, markers, onCountryClick }: GlobeProps) {
+export function Globe({ label, visited, selected, focus, markers, flags, onCountryClick }: GlobeProps) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [worlds, setWorlds] = useState<{ coarse: World; fine: World } | null>(null)
@@ -113,11 +136,20 @@ export function Globe({ label, visited, selected, focus, markers, onCountryClick
   const flight = useRef<{ stop: () => void } | null>(null)
   const drag = useRef<{ x: number; y: number; moved: boolean } | null>(null)
   const visible = useRef(true)
-  const props = useRef({ visited, selected, markers, palette, focus })
+  const props = useRef({ visited, selected, markers, flags, palette, focus })
+  const flagImages = useRef(new Map<string, HTMLImageElement>())
+  const flagHits = useRef<{ numericId: string; x: number; y: number }[]>([])
 
   useEffect(() => {
-    props.current = { visited, selected, markers, palette, focus }
-  }, [visited, selected, markers, palette, focus])
+    props.current = { visited, selected, markers, flags, palette, focus }
+  }, [visited, selected, markers, flags, palette, focus])
+
+  useEffect(() => {
+    for (const f of flags) {
+      if (flagImages.current.has(f.code)) continue
+      loadFlag(f.code).then((img) => img && flagImages.current.set(f.code, img))
+    }
+  }, [flags])
 
   useEffect(() => {
     let alive = true
@@ -183,7 +215,7 @@ export function Globe({ label, visited, selected, focus, markers, onCountryClick
       const dt = now - loop.last
       loop.last = now
       if (!visible.current) return
-      const { visited: vis, selected: sel, markers: mks, palette: pal, focus: foc } = props.current
+      const { visited: vis, selected: sel, markers: mks, flags: fls, palette: pal, focus: foc } = props.current
       const v = view.current
       if (!reduceMotion && !foc && !drag.current && now > spinPausedUntil.current) v.lng += AUTO_SPIN_DEG_PER_MS * dt
 
@@ -191,9 +223,15 @@ export function Globe({ label, visited, selected, focus, markers, onCountryClick
       const world = v.zoom >= DETAIL_ZOOM ? worlds.fine : worlds.coarse
       ctx.clearRect(0, 0, size, size)
 
+      const r = baseScale * v.zoom
+      const c = size / 2
+      const shade = Math.min(r, size)
+      const sea = ctx.createRadialGradient(c - shade * 0.3, c - shade * 0.35, shade * 0.05, c, c, shade)
+      sea.addColorStop(0, pal.seaHi)
+      sea.addColorStop(1, pal.sea)
       ctx.beginPath()
       path(SPHERE)
-      ctx.fillStyle = pal.sea
+      ctx.fillStyle = sea
       ctx.fill()
 
       ctx.beginPath()
@@ -222,16 +260,17 @@ export function Globe({ label, visited, selected, focus, markers, onCountryClick
       ctx.textBaseline = 'middle'
       const placed: { x: number; y: number; w: number }[] = []
       for (const m of mks) {
+        if (!showLabels) continue
         if (geoDistance([m.lng, m.lat], center) > Math.PI / 2 - 0.05) continue
         const p = projection([m.lng, m.lat])
         if (!p) continue
         const [x, y] = p
         ctx.beginPath()
-        ctx.arc(x, y, m.active ? 4 : 2.5, 0, Math.PI * 2)
-        ctx.fillStyle = pal.marker
+        ctx.arc(x, y, m.active ? 4.5 : 3, 0, Math.PI * 2)
+        ctx.fillStyle = pal.selected
         ctx.fill()
-        ctx.strokeStyle = pal.halo
-        ctx.lineWidth = 1.5
+        ctx.strokeStyle = pal.core
+        ctx.lineWidth = m.active ? 2 : 1.5
         ctx.stroke()
         if (showLabels && m.active) {
           const w = ctx.measureText(m.label).width
@@ -248,16 +287,57 @@ export function Globe({ label, visited, selected, focus, markers, onCountryClick
         }
       }
 
+      const hits: { numericId: string; x: number; y: number }[] = []
+      for (const f of fls) {
+        if (f.numericId === sel) continue
+        if (geoDistance([f.lng, f.lat], center) > Math.PI / 2 - 0.1) continue
+        const img = flagImages.current.get(f.code)
+        const p = projection([f.lng, f.lat])
+        if (!img || !p) continue
+        const [x, y] = FLAG_NUDGES.map(([dx, dy]) => [p[0] + dx, p[1] + dy] as const).find(
+          ([nx, ny]) => !hits.some((h) => Math.abs(h.x - nx) < FLAG_W + 4 && Math.abs(h.y - ny) < FLAG_H + 4),
+        ) ?? [p[0], p[1]]
+        ctx.save()
+        ctx.shadowColor = 'rgb(0 0 0 / 0.35)'
+        ctx.shadowBlur = 6
+        ctx.shadowOffsetY = 2
+        ctx.beginPath()
+        ctx.roundRect(x - FLAG_W / 2 - 2, y - FLAG_H / 2 - 2, FLAG_W + 4, FLAG_H + 4, 5)
+        ctx.fillStyle = pal.core
+        ctx.fill()
+        ctx.restore()
+        ctx.save()
+        ctx.beginPath()
+        ctx.roundRect(x - FLAG_W / 2, y - FLAG_H / 2, FLAG_W, FLAG_H, 3)
+        ctx.clip()
+        ctx.drawImage(img, x - FLAG_W / 2, y - FLAG_H / 2, FLAG_W, FLAG_H)
+        ctx.restore()
+        hits.push({ numericId: f.numericId, x, y })
+      }
+      flagHits.current = hits
+
+      const rim = ctx.createRadialGradient(c, c, r * 0.8, c, c, r)
+      rim.addColorStop(0, 'transparent')
+      rim.addColorStop(1, pal.rim)
       ctx.beginPath()
       path(SPHERE)
-      ctx.strokeStyle = pal.grid
-      ctx.lineWidth = 1
-      ctx.stroke()
+      ctx.fillStyle = rim
+      ctx.fill()
+
     }
     loop.raf = requestAnimationFrame(frame)
 
     return () => cancelAnimationFrame(loop.raf)
   }, [worlds, size, reduceMotion])
+
+  function flagAt(clientX: number, clientY: number) {
+    const rect = canvasRef.current?.getBoundingClientRect()
+    if (!rect) return undefined
+    const x = clientX - rect.left
+    const y = clientY - rect.top
+
+    return flagHits.current.find((h) => Math.abs(h.x - x) <= FLAG_HIT && Math.abs(h.y - y) <= FLAG_HIT)?.numericId
+  }
 
   function countryAt(clientX: number, clientY: number) {
     const canvas = canvasRef.current
@@ -284,7 +364,7 @@ export function Globe({ label, visited, selected, focus, markers, onCountryClick
     const d = drag.current
     if (!d) {
       const hit = countryAt(e.clientX, e.clientY)
-      setHovering(Boolean(hit && visited.has(String(hit.id))))
+      setHovering(Boolean(flagAt(e.clientX, e.clientY) || (hit && visited.has(String(hit.id)))))
 
       return
     }
@@ -306,6 +386,12 @@ export function Globe({ label, visited, selected, focus, markers, onCountryClick
 
       return
     }
+    const flag = flagAt(e.clientX, e.clientY)
+    if (flag) {
+      onCountryClick(flag)
+
+      return
+    }
     const hit = countryAt(e.clientX, e.clientY)
     if (hit && visited.has(String(hit.id))) onCountryClick(String(hit.id))
   }
@@ -315,10 +401,11 @@ export function Globe({ label, visited, selected, focus, markers, onCountryClick
       {!worlds && <div className="absolute inset-[2px] animate-pulse rounded-full bg-elevated" />}
       <canvas
         ref={canvasRef}
-        className={cn('absolute inset-0 size-full touch-none rounded-full', hovering ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing')}
+        className={cn('absolute inset-0 size-full touch-pan-y rounded-full [-webkit-tap-highlight-color:transparent]', hovering ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing')}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
+        onPointerCancel={() => (drag.current = null)}
         onPointerLeave={() => setHovering(false)}
         aria-label={label}
         role="img"

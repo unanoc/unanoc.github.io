@@ -17,11 +17,8 @@ export type Messages = {
     daysOnRoad: PluralForms
     days: PluralForms
     daysShort: PluralForms
-    hint: string
-    allTrips: string
-    wholeWorld: string
-    citiesLabel: string
-    tripsLabel: string
+    showAll: string
+    showLess: string
     globe: string
   }
 }
@@ -55,11 +52,8 @@ const en: Messages = {
     daysOnRoad: { one: '{n} day on the road', other: '{n} days on the road' },
     days: { one: '{n} day', other: '{n} days' },
     daysShort: { other: '{n}d' },
-    hint: 'drag the globe · tap a country',
-    allTrips: 'All trips',
-    wholeWorld: 'whole world',
-    citiesLabel: 'Cities',
-    tripsLabel: 'Trips',
+    showAll: 'All trips · {n}',
+    showLess: 'Show less',
     globe: 'Globe with visited countries',
   },
 }
@@ -106,11 +100,8 @@ const ru: Messages = {
     },
     days: { one: '{n} день', few: '{n} дня', many: '{n} дней', other: '{n} дня' },
     daysShort: { other: '{n} дн' },
-    hint: 'крути глобус · нажми на страну',
-    allTrips: 'Все поездки',
-    wholeWorld: 'весь мир',
-    citiesLabel: 'Города',
-    tripsLabel: 'Поездки',
+    showAll: 'Все поездки · {n}',
+    showLess: 'Свернуть',
     globe: 'Глобус с посещёнными странами',
   },
 }
@@ -144,11 +135,8 @@ const ko: Messages = {
     daysOnRoad: { other: '여행한 날 {n}일' },
     days: { other: '{n}일' },
     daysShort: { other: '{n}일' },
-    hint: '지구본을 돌리고 나라를 눌러보세요',
-    allTrips: '전체 여행',
-    wholeWorld: '전체 보기',
-    citiesLabel: '도시',
-    tripsLabel: '여행',
+    showAll: '전체 여행 · {n}',
+    showLess: '접기',
     globe: '방문한 나라가 표시된 지구본',
   },
 }
