@@ -8,6 +8,7 @@ export const cities = {
   kitakyushu: { name: 'Китакюсю', country: 'JP', lat: 33.8834, lng: 130.8752 },
   hiroshima: { name: 'Хиросима', country: 'JP', lat: 34.3853, lng: 132.4553 },
   miyajima: { name: 'Миядзима', country: 'JP', lat: 34.2959, lng: 132.3199 },
+  osaka: { name: 'Осака', country: 'JP', lat: 34.6937, lng: 135.5023 },
   kyoto: { name: 'Киото', country: 'JP', lat: 35.0116, lng: 135.7681 },
   tokyo: { name: 'Токио', country: 'JP', lat: 35.6762, lng: 139.6503 },
   fujiyoshida: { name: 'Фудзиёсида', country: 'JP', lat: 35.4876, lng: 138.8077 },
@@ -22,7 +23,7 @@ export const cities = {
 export type CityId = keyof typeof cities
 
 export const trips: Trip<CityId>[] = [
-  { from: '2026-09-25', to: '2026-09-30', cities: ['tokyo'] },
+  { from: '2026-09-25', to: '2026-09-30', cities: ['osaka', 'kyoto', 'tokyo'] },
   { from: '2026-07-29', to: '2026-08-05', cities: ['bangkok'] },
   { from: '2026-07-20', to: '2026-07-28', cities: ['singapore'] },
   { from: '2026-03-28', to: '2026-04-08', cities: ['phuquoc'] },
