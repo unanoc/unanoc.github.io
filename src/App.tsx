@@ -1,11 +1,8 @@
 import { motion } from 'motion/react'
-import { Footer } from '@/components/layout/Footer'
 import { Profile } from '@/components/layout/Profile'
 import { Activity } from '@/components/sections/Activity'
-import { Journey } from '@/components/sections/Journey'
 import { Projects } from '@/components/sections/Projects'
 import { Travel } from '@/components/sections/Travel'
-import { Writing } from '@/components/sections/Writing'
 import { EASE_OUT } from '@/lib/motion'
 
 export default function App() {
@@ -21,15 +18,10 @@ export default function App() {
         >
           <Projects />
           <Activity />
-          <Writing />
-          <Journey />
         </motion.main>
       </div>
       <div className="mt-20 border-t border-line pt-14">
         <Travel />
-      </div>
-      <div className="mt-16">
-        <Footer />
       </div>
     </div>
   )

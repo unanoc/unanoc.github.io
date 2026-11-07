@@ -9,7 +9,6 @@ import { Avatar } from '@/components/ui/Avatar'
 import { PulseDot } from '@/components/ui/PulseDot'
 import { SocialIcons } from '@/components/ui/SocialLinks'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
-import { Subscribe } from '@/components/sections/Subscribe'
 
 const CLOCK_TICK_MS = 30_000
 const timeFmt = new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: profile.timezone })
@@ -69,7 +68,6 @@ export function Profile({ className }: { className?: string }) {
       </dl>
 
       <SocialIcons className="mt-4 -ml-2" />
-      <Subscribe className="mt-6" />
     </motion.aside>
   )
 }
