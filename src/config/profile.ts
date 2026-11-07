@@ -7,7 +7,7 @@ export const profile: Profile = {
   flag: '🇰🇷',
   timezone: 'Asia/Seoul',
   soloSince: '2026-07-10T02:41:00+09:00',
-  building: { name: 'Trexp', url: 'https://trexp.app' },
+  building: { name: 'Trexp', url: 'https://trexp.app/?ref=unanoc' },
   bio: 'Сам пишу код, рисую дизайн и выпускаю приложения, которыми пользуюсь каждый день.',
   cta: { label: 'Подписаться', hint: 'Пишу раз в неделю. Без спама.' },
 }
