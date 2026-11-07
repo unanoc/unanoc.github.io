@@ -1,15 +1,12 @@
 import countries from 'i18n-iso-countries'
 import { cities, trips, type CityId } from '@/config'
+import { INTL_LOCALE, type Locale } from '@/i18n/locales'
 import type { City, Trip } from '@/types/travel'
 
 const DAY_MS = 86_400_000
-const NAME_OVERRIDES: Record<string, string> = {
-  KR: 'Южная Корея',
-  US: 'США',
-  GB: 'Великобритания',
-  AE: 'ОАЭ',
+const NAME_OVERRIDES: Partial<Record<Locale, Record<string, string>>> = {
+  ru: { KR: 'Южная Корея', US: 'США', GB: 'Великобритания', AE: 'ОАЭ' },
 }
-const regionNames = new Intl.DisplayNames('ru', { type: 'region' })
 
 export type TripView = Trip<CityId> & {
   id: string
@@ -45,8 +42,8 @@ export function flagOf(code: string) {
   return String.fromCodePoint(...[...code.toUpperCase()].map((c) => 0x1f1a5 + c.charCodeAt(0)))
 }
 
-export function countryName(code: string) {
-  return NAME_OVERRIDES[code] ?? regionNames.of(code) ?? code
+export function countryName(code: string, locale: Locale) {
+  return NAME_OVERRIDES[locale]?.[code] ?? new Intl.DisplayNames(INTL_LOCALE[locale], { type: 'region' }).of(code) ?? code
 }
 
 function tripDays(trip: Trip) {
@@ -64,7 +61,7 @@ function buildTrips(): TripView[] {
     .sort((a, b) => b.from.localeCompare(a.from))
 }
 
-function buildCountries(tripViews: TripView[]): CountryInfo[] {
+function buildCountries(tripViews: TripView[], locale: Locale): CountryInfo[] {
   const codes = new Set<string>(tripViews.flatMap((t) => t.countries))
 
   return [...codes]
@@ -83,19 +80,19 @@ function buildCountries(tripViews: TripView[]): CountryInfo[] {
       return {
         code,
         numericId: countries.alpha2ToNumeric(code) ?? '',
-        name: countryName(code),
+        name: countryName(code, locale),
         flag: flagOf(code),
         cities: cityStats,
         trips: countryTrips,
         days: countryTrips.reduce((sum, t) => sum + t.days, 0),
       }
     })
-    .sort((a, b) => b.trips.length - a.trips.length || a.name.localeCompare(b.name, 'ru'))
+    .sort((a, b) => b.trips.length - a.trips.length || a.name.localeCompare(b.name, INTL_LOCALE[locale]))
 }
 
-export function buildTravel(): TravelSummary {
+export function buildTravel(locale: Locale): TravelSummary {
   const tripViews = buildTrips()
-  const countryInfos = buildCountries(tripViews)
+  const countryInfos = buildCountries(tripViews, locale)
 
   return {
     countries: countryInfos,
@@ -106,20 +103,8 @@ export function buildTravel(): TravelSummary {
   }
 }
 
-const rangeDay = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' })
-const rangeFull = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })
+export function formatRange(from: string, to: string, locale: Locale) {
+  const fmt = new Intl.DateTimeFormat(INTL_LOCALE[locale], { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
 
-export function formatRange(from: string, to: string) {
-  const a = new Date(from)
-  const b = new Date(to)
-  const strip = (s: string) => s.replace(' г.', '')
-  if (a.getFullYear() !== b.getFullYear()) return `${strip(rangeFull.format(a))} – ${strip(rangeFull.format(b))}`
-
-  return `${rangeDay.format(a)} – ${strip(rangeFull.format(b))}`
-}
-
-export function plural(n: number, one: string, few: string, many: string) {
-  const rule = new Intl.PluralRules('ru-RU').select(n)
-
-  return `${n.toLocaleString('ru-RU')} ${rule === 'one' ? one : rule === 'few' ? few : many}`
+  return fmt.formatRange(new Date(`${from}T00:00:00Z`), new Date(`${to}T00:00:00Z`)).replace(' г.', '')
 }

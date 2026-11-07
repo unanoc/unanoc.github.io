@@ -1,23 +1,22 @@
 import { ArrowUpRight, Plus, Rocket, Users } from 'lucide-react'
 import { projects } from '@/config'
+import { useI18n } from '@/i18n/useI18n'
 import { cn } from '@/lib/cn'
 import { useProjectUsers } from '@/lib/project-stats'
 import type { Project, ProjectStatus } from '@/types/content'
 import { AppStoreButton } from '@/components/ui/AppStoreButton'
 import { Section } from '@/components/ui/Section'
 
-const STATUS: Record<ProjectStatus, { label: string; dot: string }> = {
-  live: { label: 'активно', dot: 'bg-emerald-500' },
-  building: { label: 'в работе', dot: 'bg-amber-500' },
-  sold: { label: 'продан', dot: 'bg-sky-500' },
-  archived: { label: 'неактивно', dot: 'bg-faint' },
+const STATUS_DOT: Record<ProjectStatus, string> = {
+  live: 'bg-emerald-500',
+  building: 'bg-amber-500',
+  sold: 'bg-sky-500',
+  archived: 'bg-faint',
 }
 
-const numberFmt = new Intl.NumberFormat('ru-RU')
-const sinceFmt = new Intl.DateTimeFormat('ru-RU', { month: 'short', year: 'numeric' })
-
 function ProjectTile({ p, users }: { p: Project; users: number }) {
-  const status = STATUS[p.status]
+  const { intl, m, pick, fill } = useI18n()
+  const launched = new Intl.DateTimeFormat(intl, { month: 'short', year: 'numeric' }).format(new Date(p.since)).replace(' г.', '')
 
   return (
     <article className="flex flex-col rounded-2xl border border-line bg-surface p-4 transition hover:-translate-y-0.5 hover:border-ink/15 hover:shadow-[0_6px_24px_-12px_rgb(0_0_0/0.25)]">
@@ -29,22 +28,22 @@ function ProjectTile({ p, users }: { p: Project; users: number }) {
             <ArrowUpRight className="size-3.5 text-faint transition group-hover:text-ink" />
           </a>
           <p className="flex items-center gap-1 text-[11px] text-faint">
-            <span className={cn('size-1.5 rounded-full', status.dot)} />
-            {status.label}
+            <span className={cn('size-1.5 rounded-full', STATUS_DOT[p.status])} />
+            {m.projects.status[p.status]}
           </p>
         </div>
         {p.appStoreUrl && <AppStoreButton href={p.appStoreUrl} />}
       </div>
-      <p className="mt-3 text-[13px] leading-snug text-muted">{p.description}</p>
+      <p className="mt-3 text-[13px] leading-snug text-muted">{pick(p.description)}</p>
       <div className="mt-3 flex items-center justify-between gap-2 border-t border-line pt-3 text-xs text-faint">
         <span className="inline-flex items-center gap-1.5">
           <Users className="size-3.5" />
-          <span className="font-semibold text-ink tabular-nums">{numberFmt.format(users)}</span>
-          юзеров
+          <span className="font-semibold text-ink tabular-nums">{users.toLocaleString(intl)}</span>
+          {m.projects.users}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <Rocket className="size-3.5" />
-          запуск {sinceFmt.format(new Date(p.since)).replace(' г.', '')}
+          {fill(m.projects.launched, { date: launched })}
         </span>
       </div>
     </article>
@@ -52,19 +51,22 @@ function ProjectTile({ p, users }: { p: Project; users: number }) {
 }
 
 function NextTile() {
+  const { m } = useI18n()
+
   return (
     <div className="hidden items-center justify-center gap-1.5 rounded-xl border border-dashed border-line text-xs text-faint sm:flex">
       <Plus className="size-3.5" />
-      следующий проект
+      {m.projects.next}
     </div>
   )
 }
 
 export function Projects() {
+  const { m } = useI18n()
   const users = useProjectUsers(projects)
 
   return (
-    <Section title="Проекты">
+    <Section title={m.projects.title}>
       <div className="grid gap-3 sm:grid-cols-2">
         {projects.map((p) => (
           <ProjectTile key={p.name} p={p} users={users[p.slug] ?? 0} />

@@ -1,14 +1,14 @@
+import type { Localized } from '@/i18n/locales'
+
 export type City = {
-  name: string
+  name: Localized
   country: string
   lat: number
   lng: number
 }
 
 export type Trip<CityId extends string = string> = {
-  title?: string
   from: string
   to: string
   cities: CityId[]
-  note?: string
 }

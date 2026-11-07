@@ -1,13 +1,15 @@
 import { motion } from 'motion/react'
 import { useState } from 'react'
 import avatar from '@/assets/images/avatar.webp'
+import { useI18n } from '@/i18n/useI18n'
 
 export function Avatar({ alt }: { alt: string }) {
   const [waves, setWaves] = useState(0)
+  const { m } = useI18n()
   const wave = () => setWaves((w) => w + 1)
 
   return (
-    <button onClick={wave} onMouseEnter={wave} aria-label="Помахать" className="relative">
+    <button onClick={wave} onMouseEnter={wave} aria-label={m.ui.wave} className="relative">
       <img src={avatar} alt={alt} width={64} height={64} className="size-16 rounded-full border border-line object-cover" />
       <motion.span
         key={waves}

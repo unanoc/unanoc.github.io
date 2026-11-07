@@ -1,4 +1,6 @@
-import { plural } from '@/lib/travel'
+import type { Messages } from '@/i18n/messages'
+import type { Locale } from '@/i18n/locales'
+import { formatPlural } from '@/i18n/plural'
 
 const DAY_MS = 86_400_000
 const MONTHS_IN_YEAR = 12
@@ -22,15 +24,14 @@ function wholeMonths(from: CalendarDay, to: CalendarDay) {
   return (to.y - from.y) * MONTHS_IN_YEAR + (to.m - from.m) - (to.d < from.d ? 1 : 0)
 }
 
-export function formatTenure(since: string, timeZone: string, now = new Date()) {
+export function formatTenure(since: string, timeZone: string, locale: Locale, words: Messages['tenure'], now = new Date()) {
   const from = calendarDay(new Date(since), timeZone)
   const to = calendarDay(now, timeZone)
   const months = wholeMonths(from, to)
-  if (months < MONTHS_IN_YEAR) return plural(dayNumber(from, to), 'день', 'дня', 'дней')
+  if (months < MONTHS_IN_YEAR) return formatPlural(locale, dayNumber(from, to), words.days)
 
-  const years = Math.floor(months / MONTHS_IN_YEAR)
+  const years = formatPlural(locale, Math.floor(months / MONTHS_IN_YEAR), words.years)
   const rest = months % MONTHS_IN_YEAR
-  const yearsText = plural(years, 'год', 'года', 'лет')
 
-  return rest > 0 ? `${yearsText} ${rest} мес` : yearsText
+  return rest > 0 ? `${years} ${formatPlural(locale, rest, words.months)}` : years
 }

@@ -19,6 +19,7 @@ export type GlobeMarker = {
 export type GlobeFocus = { lat: number; lng: number; zoom: number }
 
 type GlobeProps = {
+  label: string
   visited: Set<string>
   selected?: string
   focus: GlobeFocus | null
@@ -98,7 +99,7 @@ function usePalette() {
   return palette
 }
 
-export function Globe({ visited, selected, focus, markers, onCountryClick }: GlobeProps) {
+export function Globe({ label, visited, selected, focus, markers, onCountryClick }: GlobeProps) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [worlds, setWorlds] = useState<{ coarse: World; fine: World } | null>(null)
@@ -319,7 +320,7 @@ export function Globe({ visited, selected, focus, markers, onCountryClick }: Glo
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerLeave={() => setHovering(false)}
-        aria-label="Глобус с посещёнными странами"
+        aria-label={label}
         role="img"
       />
     </div>

@@ -1,9 +1,11 @@
+import type { Localized } from '@/i18n/locales'
+
 export type ProjectStatus = 'live' | 'building' | 'sold' | 'archived'
 
 export type Project = {
   slug: string
   name: string
-  description: string
+  description: Localized
   url: string
   appStoreUrl?: string
   logo: string
@@ -29,22 +31,22 @@ export type Social = {
 export type Profile = {
   name: string
   handle: string
-  city: string
-  country: string
+  city: Localized
+  country: Localized
   flag: string
   timezone: string
-  bio: string
+  bio: Localized
   cta: { label: string; hint: string }
 }
 
 export type Role = {
-  title: string
-  note?: string
+  title: Localized
+  note?: Localized
   since: string
   until?: string
 }
 
-export type ClockMood = { from: number; text: string }
+export type ClockMood = { from: number; text: Localized }
 
 export type TimelineEntry = { date: string; title: string; text: string }
 

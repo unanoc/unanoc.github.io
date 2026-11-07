@@ -3,20 +3,15 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { socials } from '@/config'
 import { cn } from '@/lib/cn'
 import { useGithubActivity, type ActivityDay } from '@/lib/github-activity'
-import { plural } from '@/lib/travel'
+import { useI18n } from '@/i18n/useI18n'
 import { BrandIcon } from '@/components/ui/BrandIcon'
 import { Section } from '@/components/ui/Section'
 
 const LEVELS = ['bg-elevated', 'bg-emerald-500/25', 'bg-emerald-500/50', 'bg-emerald-500/75', 'bg-emerald-500']
-const dayFmt = new Intl.DateTimeFormat('ru-RU', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
 const TIP_EDGE = 72
 const githubUrl = socials.find((s) => s.kind === 'github')?.href
 
 type Tip = { day: ActivityDay; x: number; y: number; pinned: boolean }
-
-function contributions(n: number) {
-  return n === 0 ? 'Нет контрибуций' : plural(n, 'контрибуция', 'контрибуции', 'контрибуций')
-}
 
 function Title() {
   const label = (
@@ -35,6 +30,9 @@ function Title() {
 }
 
 export function Activity() {
+  const { intl, m, plural } = useI18n()
+  const dayFmt = new Intl.DateTimeFormat(intl, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+  const contributions = (n: number) => (n === 0 ? m.activity.none : plural(n, m.activity.perDay))
   const { days, total } = useGithubActivity()
   const wrapRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -72,7 +70,7 @@ export function Activity() {
   }
 
   return (
-    <Section title={<Title />} meta={`${plural(total, 'контрибуция', 'контрибуции', 'контрибуций')} за год`}>
+    <Section title={<Title />} meta={plural(total, m.activity.perYear)}>
       <div ref={wrapRef} className="relative">
         <div ref={scrollRef} className="overflow-x-auto [scrollbar-width:none]" onScroll={() => setTip(null)}>
           <div className="grid min-w-[520px] grid-flow-col grid-rows-7 gap-[2px]" style={{ gridTemplateColumns: `repeat(${weeks}, minmax(0, 1fr))` }}>
