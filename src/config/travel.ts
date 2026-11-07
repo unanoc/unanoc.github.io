@@ -1,7 +1,6 @@
 import type { City, Trip } from '@/types/travel'
 
 export const cities = {
-  busan: { name: 'Пусан', country: 'KR', lat: 35.1796, lng: 129.0756 },
   jeju: { name: 'Чеджу', country: 'KR', lat: 33.4996, lng: 126.5312 },
   incheon: { name: 'Инчхон', country: 'KR', lat: 37.4563, lng: 126.7052 },
   yongin: { name: 'Ёнъин', country: 'KR', lat: 37.2411, lng: 127.1776 },
@@ -38,7 +37,7 @@ export const trips: Trip<CityId>[] = [
   {
     from: '2024-04-16',
     to: '2024-05-01',
-    cities: ['busan', 'fukuoka', 'kitakyushu', 'hiroshima', 'miyajima', 'kyoto', 'tokyo', 'fujiyoshida', 'kawaguchiko'],
+    cities: ['fukuoka', 'kitakyushu', 'hiroshima', 'miyajima', 'kyoto', 'tokyo', 'fujiyoshida', 'kawaguchiko'],
   },
   { from: '2024-03-23', to: '2024-03-27', cities: ['jeju'] },
 ]
