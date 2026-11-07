@@ -1,5 +1,4 @@
 import { motion } from 'motion/react'
-import type { ReactNode } from 'react'
 import { clockMoods, profile, roles } from '@/config'
 import { useNow } from '@/hooks/useNow'
 import { EASE_OUT } from '@/lib/motion'
@@ -19,32 +18,23 @@ function moodAt(hour: number) {
   return clockMoods.filter((m) => m.from <= hour).at(-1)?.text ?? ''
 }
 
-function Fact({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex items-baseline gap-4">
-      <dt className="w-14 shrink-0 text-faint">{label}</dt>
-      <dd className="min-w-0 text-muted">{children}</dd>
-    </div>
-  )
-}
-
-function RoleLine({ role, now }: { role: Role; now: Date }) {
+function RoleRow({ role, now }: { role: Role; now: Date }) {
   const active = !role.until
   const since = sinceFmt.format(new Date(role.since)).replace(' г.', '')
+  const tenure = formatTenure(role.since, profile.timezone, role.until ? new Date(role.until) : now)
 
   return (
-    <li className="flex items-baseline gap-2">
-      <span
-        title={active ? 'сейчас' : 'в прошлом'}
-        className={`size-1.5 shrink-0 -translate-y-0.5 rounded-full ${active ? 'bg-emerald-500' : 'bg-faint'}`}
-      />
-      <span>
-        <span className="text-ink">{role.title}</span>
-        {role.note && <span className="text-faint"> · {role.note}</span>}
-        <span className="block text-faint">
-          <span className="text-muted tabular-nums">{formatTenure(role.since, profile.timezone, role.until ? new Date(role.until) : now)}</span> · с {since}
-        </span>
-      </span>
+    <li className="flex items-start justify-between gap-3 px-3.5 py-3">
+      <div className="min-w-0">
+        <p className="flex items-center gap-2 text-[13px] font-medium whitespace-nowrap text-ink">
+          <span className={active ? 'size-1.5 shrink-0 rounded-full bg-emerald-500' : 'size-1.5 shrink-0 rounded-full bg-faint'} />
+          {role.title}
+        </p>
+        <p className="mt-0.5 pl-3.5 text-xs text-faint">
+          {role.note ? `${role.note} · ` : ''}с {since}
+        </p>
+      </div>
+      <p className="shrink-0 text-sm font-semibold text-ink tabular-nums">{tenure}</p>
     </li>
   )
 }
@@ -66,24 +56,24 @@ export function Profile({ className }: { className?: string }) {
 
       <p className="mt-5 text-sm leading-relaxed text-muted">{profile.bio}</p>
 
-      <dl className="mt-5 space-y-1.5 text-[13px]">
-        <Fact label="Стаж">
-          <ul className="space-y-1.5">
-            {roles.map((role) => (
-              <RoleLine key={role.title} role={role} now={now} />
-            ))}
-          </ul>
-        </Fact>
-        <Fact label="Сейчас">
-          <span className="flex items-baseline gap-2">
-            <PulseDot className="shrink-0 -translate-y-0.5" />
-            <span>
-              <span className="text-ink tabular-nums">{timeFmt.format(now)}</span> · {profile.city}, {profile.country} {profile.flag}
-              <span className="block text-faint">{mood}</span>
-            </span>
-          </span>
-        </Fact>
-      </dl>
+      <ul className="mt-5 divide-y divide-line rounded-xl border border-line">
+        {roles.map((role) => (
+          <RoleRow key={role.title} role={role} now={now} />
+        ))}
+      </ul>
+
+      <div className="mt-4 flex items-start gap-2.5 text-sm">
+        <span className="text-lg leading-5">{profile.flag}</span>
+        <div>
+          <p className="text-ink">
+            {profile.city}, {profile.country}
+          </p>
+          <p className="flex items-center gap-1.5 text-xs text-faint">
+            <PulseDot />
+            <span className="text-muted tabular-nums">{timeFmt.format(now)}</span> — {mood}
+          </p>
+        </div>
+      </div>
 
       <SocialIcons className="mt-4 -ml-2" />
     </motion.aside>
