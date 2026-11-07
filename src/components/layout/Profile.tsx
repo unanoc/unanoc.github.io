@@ -57,7 +57,7 @@ export function Profile({ className }: { className?: string }) {
           <h1 className="text-xl font-semibold tracking-tight">{profile.name}</h1>
           <p className="text-sm text-faint">{profile.handle}</p>
         </div>
-        <div className="flex items-center gap-1 self-start">
+        <div className="flex items-center gap-0.5 self-start">
           <LanguageSwitcher />
           <ThemeToggle />
         </div>
@@ -75,7 +75,7 @@ export function Profile({ className }: { className?: string }) {
         <span className="text-lg leading-5">{profile.flag}</span>
         <div>
           <p className="text-ink">
-            {pick(profile.city)}, {pick(profile.country)}
+            {pick(profile.country)}
           </p>
           <p className="flex items-center gap-1.5 text-xs text-faint">
             <PulseDot />

@@ -3,7 +3,6 @@ import type { ClockMood, Profile, Role } from '@/types/content'
 export const profile: Profile = {
   name: 'Daniel',
   handle: '@lee_daniil',
-  city: { en: 'Seoul', ru: 'Seoul', ko: '서울' },
   country: { en: 'South Korea', ru: 'South Korea', ko: '대한민국' },
   flag: '🇰🇷',
   timezone: 'Asia/Seoul',

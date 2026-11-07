@@ -31,7 +31,6 @@ export type Social = {
 export type Profile = {
   name: string
   handle: string
-  city: Localized
   country: Localized
   flag: string
   timezone: string

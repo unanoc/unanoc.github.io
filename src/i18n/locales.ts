@@ -4,6 +4,12 @@ export type Locale = (typeof LOCALES)[number]
 
 export type Localized = Record<Locale, string>
 
+export const LOCALE_NAMES: Localized = {
+  en: 'English',
+  ru: 'Русский',
+  ko: '한국어',
+}
+
 export const DEFAULT_LOCALE: Locale = 'en'
 
 export const INTL_LOCALE: Record<Locale, string> = {
