@@ -1,3 +1,4 @@
+export { analytics } from './analytics'
 export { clockMoods, profile } from './profile'
 export { cities, homeCity, trips, type CityId } from './travel'
 export { projects } from './projects'
