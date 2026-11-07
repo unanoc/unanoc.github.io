@@ -1,6 +1,6 @@
 export { analytics } from './analytics'
 export { clockMoods, profile, roles } from './profile'
-export { cities, homeCity, trips, type CityId } from './travel'
+export { cities, trips, type CityId } from './travel'
 export { projects } from './projects'
 export { siteApi } from './site-api'
 export { socials } from './socials'

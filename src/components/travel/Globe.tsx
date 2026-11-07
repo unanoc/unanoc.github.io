@@ -13,7 +13,6 @@ export type GlobeMarker = {
   lat: number
   lng: number
   label: string
-  home?: boolean
   active?: boolean
 }
 
@@ -29,7 +28,7 @@ type GlobeProps = {
 
 type World = { countries: Feature[]; borders: MultiLineString }
 
-type Palette = Record<'sea' | 'land' | 'border' | 'visited' | 'selected' | 'marker' | 'home' | 'label' | 'halo' | 'grid', string>
+type Palette = Record<'sea' | 'land' | 'border' | 'visited' | 'selected' | 'marker' | 'label' | 'halo' | 'grid', string>
 
 const DETAIL_ZOOM = 2.2
 const AUTO_SPIN_DEG_PER_MS = 0.006
@@ -80,7 +79,6 @@ function readPalette(): Palette {
     visited: v('--globe-visited'),
     selected: v('--accent'),
     marker: v('--ink'),
-    home: v('--accent'),
     label: v('--ink'),
     halo: v('--bg'),
     grid: v('--line'),
@@ -109,7 +107,7 @@ export function Globe({ visited, selected, focus, markers, onCountryClick }: Glo
   const palette = usePalette()
   const reduceMotion = useReducedMotion()
 
-  const view = useRef({ lng: markers.find((m) => m.home)?.lng ?? 0, lat: IDLE_TILT, zoom: 1 })
+  const view = useRef({ lng: markers.length ? markers.reduce((sum, m) => sum + m.lng, 0) / markers.length : 0, lat: IDLE_TILT, zoom: 1 })
   const spinPausedUntil = useRef(0)
   const flight = useRef<{ stop: () => void } | null>(null)
   const drag = useRef<{ x: number; y: number; moved: boolean } | null>(null)
@@ -227,19 +225,9 @@ export function Globe({ visited, selected, focus, markers, onCountryClick }: Glo
         const p = projection([m.lng, m.lat])
         if (!p) continue
         const [x, y] = p
-        if (m.home) {
-          const pulse = reduceMotion ? 0.5 : (now % 2000) / 2000
-          ctx.beginPath()
-          ctx.arc(x, y, 3 + pulse * 9, 0, Math.PI * 2)
-          ctx.strokeStyle = pal.home
-          ctx.globalAlpha = 1 - pulse
-          ctx.lineWidth = 1.5
-          ctx.stroke()
-          ctx.globalAlpha = 1
-        }
         ctx.beginPath()
         ctx.arc(x, y, m.active ? 4 : 2.5, 0, Math.PI * 2)
-        ctx.fillStyle = m.home ? pal.home : pal.marker
+        ctx.fillStyle = pal.marker
         ctx.fill()
         ctx.strokeStyle = pal.halo
         ctx.lineWidth = 1.5

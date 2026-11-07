@@ -8,8 +8,6 @@ type Props = {
 }
 
 function Badge({ c }: { c: CountryInfo }) {
-  if (c.isHome) return <span className="rounded bg-accent/15 px-1 text-[10px] font-medium text-accent">дом</span>
-
   return <span className="text-[11px] text-faint tabular-nums">×{c.trips.length}</span>
 }
 

@@ -1,5 +1,5 @@
 import countries from 'i18n-iso-countries'
-import { cities, homeCity, trips, type CityId } from '@/config'
+import { cities, trips, type CityId } from '@/config'
 import type { City, Trip } from '@/types/travel'
 
 const DAY_MS = 86_400_000
@@ -21,7 +21,6 @@ export type CityStat = {
   id: CityId
   city: City
   visits: number
-  isHome: boolean
 }
 
 export type CountryInfo = {
@@ -29,7 +28,6 @@ export type CountryInfo = {
   numericId: string
   name: string
   flag: string
-  isHome: boolean
   cities: CityStat[]
   trips: TripView[]
   days: number
@@ -67,8 +65,7 @@ function buildTrips(): TripView[] {
 }
 
 function buildCountries(tripViews: TripView[]): CountryInfo[] {
-  const homeCountry = cities[homeCity].country
-  const codes = new Set<string>([homeCountry, ...tripViews.flatMap((t) => t.countries)])
+  const codes = new Set<string>(tripViews.flatMap((t) => t.countries))
 
   return [...codes]
     .map((code) => {
@@ -79,23 +76,21 @@ function buildCountries(tripViews: TripView[]): CountryInfo[] {
           id,
           city: cities[id],
           visits: countryTrips.filter((t) => t.cities.includes(id)).length,
-          isHome: id === homeCity,
         }))
-        .filter((c) => c.visits > 0 || c.isHome)
-        .sort((a, b) => Number(b.isHome) - Number(a.isHome) || b.visits - a.visits)
+        .filter((c) => c.visits > 0)
+        .sort((a, b) => b.visits - a.visits)
 
       return {
         code,
         numericId: countries.alpha2ToNumeric(code) ?? '',
         name: countryName(code),
         flag: flagOf(code),
-        isHome: code === homeCountry,
         cities: cityStats,
         trips: countryTrips,
         days: countryTrips.reduce((sum, t) => sum + t.days, 0),
       }
     })
-    .sort((a, b) => Number(b.isHome) - Number(a.isHome) || b.trips.length - a.trips.length || a.name.localeCompare(b.name, 'ru'))
+    .sort((a, b) => b.trips.length - a.trips.length || a.name.localeCompare(b.name, 'ru'))
 }
 
 export function buildTravel(): TravelSummary {

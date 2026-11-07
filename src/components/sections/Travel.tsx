@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { cities, homeCity, type CityId } from '@/config'
+import { cities, type CityId } from '@/config'
 import { buildTravel, plural } from '@/lib/travel'
 import { CountryList } from '@/components/travel/CountryList'
 import { focusOnCities, focusOnCity } from '@/components/travel/focus'
@@ -28,7 +28,6 @@ export function Travel() {
           lat: s.city.lat,
           lng: s.city.lng,
           label: s.city.name,
-          home: s.id === homeCity,
           active: c.code === countryCode && (!cityId || cityId === s.id),
         })),
       ),

@@ -29,7 +29,7 @@ function TripRow({ trip, country, highlight, onClick }: { trip: TripView; countr
     >
       <span className="min-w-6 shrink-0 pt-px text-sm leading-5 whitespace-nowrap">{trip.countries.map(flagOf).join('')}</span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[13px] text-ink">{trip.title ?? route(trip, country)}</span>
+        <span className="block line-clamp-2 text-[13px] text-ink">{trip.title ?? route(trip, country)}</span>
         <span className="block truncate text-xs text-faint">
           {trip.title ? `${route(trip, country)} · ` : ''}
           {formatRange(trip.from, trip.to)}
@@ -62,9 +62,7 @@ function Overview({ summary, onSelectCountry }: Pick<Props, 'summary' | 'onSelec
 }
 
 function CountryView({ country, city, onSelectCountry, onSelectCity }: Required<Pick<Props, 'country'>> & Omit<Props, 'summary' | 'country'>) {
-  const facts = country.isHome
-    ? ['живу здесь', plural(country.trips.length, 'поездка', 'поездки', 'поездок')]
-    : [plural(country.trips.length, 'поездка', 'поездки', 'поездок'), plural(country.days, 'день', 'дня', 'дней')]
+  const facts = [plural(country.trips.length, 'поездка', 'поездки', 'поездок'), plural(country.days, 'день', 'дня', 'дней')]
 
   return (
     <div>
@@ -92,7 +90,7 @@ function CountryView({ country, city, onSelectCountry, onSelectCity }: Required<
             )}
           >
             {c.city.name}
-            {c.isHome ? <span className="text-[10px] opacity-70">дом</span> : c.visits > 1 && <span className="text-[11px] opacity-60 tabular-nums">×{c.visits}</span>}
+            {c.visits > 1 && <span className="text-[11px] opacity-60 tabular-nums">×{c.visits}</span>}
           </button>
         ))}
       </div>
