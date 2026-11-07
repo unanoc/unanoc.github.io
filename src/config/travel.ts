@@ -39,7 +39,7 @@ export const trips: Trip<CityId>[] = [
   {
     from: '2024-04-16',
     to: '2024-05-01',
-    cities: ['fukuoka', 'kitakyushu', 'hiroshima', 'miyajima', 'kyoto', 'tokyo', 'fujiyoshida', 'kawaguchiko'],
+    cities: ['fukuoka', 'kitakyushu', 'hiroshima', 'miyajima', 'kyoto', 'osaka', 'tokyo', 'fujiyoshida', 'kawaguchiko'],
   },
   { from: '2024-03-23', to: '2024-03-27', cities: ['jeju'] },
 ]
