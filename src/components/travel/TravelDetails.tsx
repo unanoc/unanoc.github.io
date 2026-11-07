@@ -1,0 +1,128 @@
+import { ArrowLeft } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
+import { cities, type CityId } from '@/config'
+import { cn } from '@/lib/cn'
+import { EASE_OUT } from '@/lib/motion'
+import { flagOf, formatRange, plural, type CountryInfo, type TravelSummary, type TripView } from '@/lib/travel'
+
+type Props = {
+  summary: TravelSummary
+  country?: CountryInfo
+  city?: CityId
+  onSelectCountry: (code: string | undefined) => void
+  onSelectCity: (id: CityId | undefined) => void
+}
+
+function route(trip: TripView, only?: string) {
+  const stops = trip.cities.filter((id) => !only || cities[id].country === only).map((id) => cities[id].name)
+
+  return stops.join(' → ')
+}
+
+function TripRow({ trip, country, highlight, onClick }: { trip: TripView; country?: string; highlight?: boolean; onClick?: () => void }) {
+  const Tag = onClick ? 'button' : 'div'
+
+  return (
+    <Tag
+      onClick={onClick}
+      className={cn('-mx-2 flex w-[calc(100%+1rem)] items-start gap-3 rounded-lg px-2 py-1.5 text-left transition', onClick && 'hover:bg-elevated', highlight && 'bg-elevated')}
+    >
+      <span className="min-w-6 shrink-0 pt-px text-sm leading-5 whitespace-nowrap">{trip.countries.map(flagOf).join('')}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[13px] text-ink">{trip.title ?? route(trip, country)}</span>
+        <span className="block truncate text-xs text-faint">
+          {trip.title ? `${route(trip, country)} · ` : ''}
+          {formatRange(trip.from, trip.to)}
+        </span>
+      </span>
+      <span className="shrink-0 pt-px text-xs text-faint tabular-nums">{trip.days} дн</span>
+    </Tag>
+  )
+}
+
+function Overview({ summary, onSelectCountry }: Pick<Props, 'summary' | 'onSelectCountry'>) {
+  const byYear = new Map<string, TripView[]>()
+  for (const t of summary.trips) byYear.set(t.from.slice(0, 4), [...(byYear.get(t.from.slice(0, 4)) ?? []), t])
+
+  return (
+    <div>
+      <p className="mb-3 text-xs text-faint">Все поездки</p>
+      <div className="space-y-4">
+        {[...byYear].map(([year, list]) => (
+          <div key={year}>
+            <p className="mb-1 text-xs font-medium text-muted tabular-nums">{year}</p>
+            {list.map((t) => (
+              <TripRow key={t.id} trip={t} onClick={() => onSelectCountry(t.countries[0])} />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function CountryView({ country, city, onSelectCountry, onSelectCity }: Required<Pick<Props, 'country'>> & Omit<Props, 'summary' | 'country'>) {
+  const facts = country.isHome
+    ? ['живу здесь', plural(country.trips.length, 'поездка', 'поездки', 'поездок')]
+    : [plural(country.trips.length, 'поездка', 'поездки', 'поездок'), plural(country.days, 'день', 'дня', 'дней')]
+
+  return (
+    <div>
+      <button onClick={() => onSelectCountry(undefined)} className="mb-3 inline-flex items-center gap-1 text-xs text-faint transition hover:text-ink">
+        <ArrowLeft className="size-3.5" /> весь мир
+      </button>
+      <div className="flex items-center gap-3">
+        <span className="text-4xl leading-none">{country.flag}</span>
+        <div>
+          <p className="text-lg font-semibold tracking-tight">{country.name}</p>
+          <p className="text-xs text-faint">{facts.join(' · ')}</p>
+        </div>
+      </div>
+
+      <p className="mt-5 mb-2 text-xs text-faint">Города</p>
+      <div className="flex flex-wrap gap-1.5">
+        {country.cities.map((c) => (
+          <button
+            key={c.id}
+            onClick={() => onSelectCity(city === c.id ? undefined : c.id)}
+            aria-pressed={city === c.id}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[13px] transition',
+              city === c.id ? 'bg-ink text-bg' : 'bg-elevated text-muted hover:text-ink',
+            )}
+          >
+            {c.city.name}
+            {c.isHome ? <span className="text-[10px] opacity-70">дом</span> : c.visits > 1 && <span className="text-[11px] opacity-60 tabular-nums">×{c.visits}</span>}
+          </button>
+        ))}
+      </div>
+
+      {country.trips.length > 0 && (
+        <>
+          <p className="mt-5 mb-1 text-xs text-faint">Поездки</p>
+          {country.trips.map((t) => (
+            <TripRow key={t.id} trip={t} country={country.code} highlight={Boolean(city && t.cities.includes(city))} />
+          ))}
+        </>
+      )}
+    </div>
+  )
+}
+
+export function TravelDetails(props: Props) {
+  const key = props.country?.code ?? 'world'
+
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={key}
+        initial={{ opacity: 0, x: 8 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -8 }}
+        transition={{ duration: 0.25, ease: EASE_OUT }}
+      >
+        {props.country ? <CountryView {...props} country={props.country} /> : <Overview summary={props.summary} onSelectCountry={props.onSelectCountry} />}
+      </motion.div>
+    </AnimatePresence>
+  )
+}
