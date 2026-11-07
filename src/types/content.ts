@@ -30,10 +30,10 @@ export type Profile = {
   name: string
   handle: string
   city: string
+  country: string
   flag: string
   timezone: string
   soloSince: string
-  building: { name: string; url: string }
   bio: string
   cta: { label: string; hint: string }
 }

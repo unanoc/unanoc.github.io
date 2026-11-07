@@ -1,10 +1,10 @@
-import { ArrowUpRight } from 'lucide-react'
 import { motion } from 'motion/react'
 import type { ReactNode } from 'react'
 import { clockMoods, profile } from '@/config'
 import { useNow } from '@/hooks/useNow'
 import { EASE_OUT } from '@/lib/motion'
 import { soloDayNumber } from '@/lib/solo-duration'
+import { plural } from '@/lib/travel'
 import { Avatar } from '@/components/ui/Avatar'
 import { PulseDot } from '@/components/ui/PulseDot'
 import { SocialIcons } from '@/components/ui/SocialLinks'
@@ -47,21 +47,16 @@ export function Profile({ className }: { className?: string }) {
       <p className="mt-5 text-sm leading-relaxed text-muted">{profile.bio}</p>
 
       <dl className="mt-5 space-y-1.5 text-[13px]">
-        <Fact label="Соло">
-          <span className="text-ink tabular-nums">{day}-й день</span>
-          <span className="text-faint"> · с {sinceFmt.format(new Date(profile.soloSince)).replace(' г.', '')}</span>
-        </Fact>
-        <Fact label="Строю">
-          <a href={profile.building.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-ink underline decoration-line underline-offset-4 transition hover:decoration-ink/40">
-            {profile.building.name}
-            <ArrowUpRight className="size-3.5 text-faint" />
-          </a>
+        <Fact label="Стаж">
+          <span className="text-ink tabular-nums">{plural(day, 'день', 'дня', 'дней')}</span> соло-разработки
+          <span className="block text-faint">с {sinceFmt.format(new Date(profile.soloSince)).replace(' г.', '')}, первого билда Trexp</span>
         </Fact>
         <Fact label="Сейчас">
           <span className="flex items-baseline gap-2">
             <PulseDot className="shrink-0 -translate-y-0.5" />
             <span>
-              <span className="text-ink tabular-nums">{timeFmt.format(now)}</span> в {profile.city} {profile.flag} — {mood}
+              <span className="text-ink tabular-nums">{timeFmt.format(now)}</span> · {profile.city}, {profile.country} {profile.flag}
+              <span className="block text-faint">{mood}</span>
             </span>
           </span>
         </Fact>
