@@ -1,4 +1,4 @@
-import { ArrowUpRight, Plus, Rocket, Users } from 'lucide-react'
+import { ArrowUpRight, Hammer, Rocket, Users } from 'lucide-react'
 import { projects } from '@/config'
 import { dateFormat, numberFormat, stripYearSuffix } from '@/i18n/intl'
 import { useI18n } from '@/i18n/useI18n'
@@ -56,7 +56,7 @@ function NextTile() {
 
   return (
     <div className="hidden items-center justify-center gap-1.5 rounded-xl border border-dashed border-line text-xs text-faint sm:flex">
-      <Plus className="size-3.5" />
+      <Hammer className="size-3.5" />
       {m.projects.next}
     </div>
   )

@@ -37,7 +37,7 @@ const en: Messages = {
     status: { live: 'active', building: 'in progress', sold: 'sold', archived: 'inactive' },
     users: 'users',
     launched: 'launched {date}',
-    next: 'next project',
+    next: 'in the works',
   },
   activity: {
     perYear: { one: '{n} contribution in the last year', other: '{n} contributions in the last year' },
@@ -75,7 +75,7 @@ const ru: Messages = {
     status: { live: 'активно', building: 'в работе', sold: 'продан', archived: 'неактивно' },
     users: 'юзеров',
     launched: 'запуск {date}',
-    next: 'следующий проект',
+    next: 'в процессе',
   },
   activity: {
     perYear: {
@@ -120,7 +120,7 @@ const ko: Messages = {
     status: { live: '운영 중', building: '개발 중', sold: '매각', archived: '중단' },
     users: '사용자',
     launched: '{date} 출시',
-    next: '다음 프로젝트',
+    next: '준비 중',
   },
   activity: {
     perYear: { other: '지난 1년간 {n}회 기여' },
