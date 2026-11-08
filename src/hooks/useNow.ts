@@ -4,9 +4,16 @@ export function useNow(intervalMs: number) {
   const [now, setNow] = useState(() => new Date())
 
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), intervalMs)
+    let id: ReturnType<typeof setTimeout>
+    const schedule = () => {
+      id = setTimeout(() => {
+        setNow(new Date())
+        schedule()
+      }, intervalMs - (Date.now() % intervalMs))
+    }
+    schedule()
 
-    return () => clearInterval(id)
+    return () => clearTimeout(id)
   }, [intervalMs])
 
   return now

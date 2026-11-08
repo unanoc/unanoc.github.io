@@ -1,19 +1,20 @@
 import { motion } from 'motion/react'
 import { clockMoods, profile, roles } from '@/config'
 import { useNow } from '@/hooks/useNow'
+import { dateFormat, stripYearSuffix } from '@/i18n/intl'
 import { useI18n } from '@/i18n/useI18n'
 import type { Localized } from '@/i18n/locales'
 import { EASE_OUT } from '@/lib/motion'
 import { formatTenure } from '@/lib/tenure'
 import type { Role } from '@/types/content'
 import { Avatar } from '@/components/ui/Avatar'
+import { Flag } from '@/components/ui/Flag'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 import { PulseDot } from '@/components/ui/PulseDot'
 import { SocialIcons } from '@/components/ui/SocialLinks'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
-const CLOCK_TICK_MS = 30_000
-const hourFmt = new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: profile.timezone })
+const CLOCK_TICK_MS = 60_000
 
 function moodAt(hour: number): Localized | undefined {
   return clockMoods.filter((m) => m.from <= hour).at(-1)?.text
@@ -22,8 +23,7 @@ function moodAt(hour: number): Localized | undefined {
 function RoleRow({ role, now }: { role: Role; now: Date }) {
   const { locale, intl, m, pick, fill } = useI18n()
   const active = !role.until
-  const sinceFmt = new Intl.DateTimeFormat(intl, { day: 'numeric', month: 'long', year: 'numeric', timeZone: profile.timezone })
-  const since = sinceFmt.format(new Date(role.since)).replace(' г.', '')
+  const since = stripYearSuffix(dateFormat(intl, { day: 'numeric', month: 'long', year: 'numeric', timeZone: profile.timezone }).format(new Date(role.since)))
   const tenure = formatTenure(role.since, profile.timezone, locale, m.tenure, role.until ? new Date(role.until) : now)
 
   return (
@@ -46,8 +46,8 @@ function RoleRow({ role, now }: { role: Role; now: Date }) {
 export function Profile({ className }: { className?: string }) {
   const { intl, pick } = useI18n()
   const now = useNow(CLOCK_TICK_MS)
-  const mood = moodAt(Number(hourFmt.format(now)))
-  const time = new Intl.DateTimeFormat(intl, { hour: '2-digit', minute: '2-digit', timeZone: profile.timezone }).format(now)
+  const mood = moodAt(Number(dateFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: profile.timezone }).format(now)))
+  const time = dateFormat(intl, { hour: '2-digit', minute: '2-digit', timeZone: profile.timezone }).format(now)
 
   return (
     <motion.aside className={className} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: EASE_OUT }}>
@@ -72,7 +72,7 @@ export function Profile({ className }: { className?: string }) {
       </ul>
 
       <div className="mt-4 flex items-start gap-2.5 text-sm">
-        <span className="text-lg leading-5">{profile.flag}</span>
+        <Flag code={profile.countryCode} className="mt-1 text-base" />
         <div>
           <p className="text-ink">
             {pick(profile.country)}

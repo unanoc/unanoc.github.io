@@ -4,14 +4,13 @@ export const profile: Profile = {
   name: 'Daniel',
   handle: '@lee_daniil',
   country: { en: 'South Korea', ru: 'South Korea', ko: '대한민국' },
-  flag: '🇰🇷',
+  countryCode: 'KR',
   timezone: 'Asia/Seoul',
   bio: {
     en: 'I dream up and ship apps I use every day.',
     ru: 'Придумываю и выпускаю приложения, которыми сам пользуюсь каждый день.',
     ko: '매일 직접 쓰는 앱을 기획하고 출시합니다.',
   },
-  cta: { label: 'Подписаться', hint: 'Пишу раз в неделю. Без спама.' },
 }
 
 export const roles: Role[] = [

@@ -1,5 +1,6 @@
 import type { Messages } from '@/i18n/messages'
 import type { Locale } from '@/i18n/locales'
+import { dateFormat } from '@/i18n/intl'
 import { formatPlural } from '@/i18n/plural'
 
 const DAY_MS = 86_400_000
@@ -8,7 +9,7 @@ const MONTHS_IN_YEAR = 12
 type CalendarDay = { y: number; m: number; d: number }
 
 function calendarDay(date: Date, timeZone: string): CalendarDay {
-  const [y, m, d] = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' })
+  const [y, m, d] = dateFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' })
     .format(date)
     .split('-')
     .map(Number)

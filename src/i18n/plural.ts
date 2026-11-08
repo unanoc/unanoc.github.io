@@ -1,11 +1,13 @@
+import { numberFormat, pluralRules } from './intl'
 import { INTL_LOCALE, type Locale } from './locales'
 
 export type PluralForms = Partial<Record<Intl.LDMLPluralRule, string>> & { other: string }
 
 export function formatPlural(locale: Locale, n: number, forms: PluralForms) {
-  const rule = new Intl.PluralRules(INTL_LOCALE[locale]).select(n)
+  const intl = INTL_LOCALE[locale]
+  const template = forms[pluralRules(intl).select(n)] ?? forms.other
 
-  return (forms[rule] ?? forms.other).replace('{n}', n.toLocaleString(INTL_LOCALE[locale]))
+  return template.replace('{n}', numberFormat(intl).format(n))
 }
 
 export function fill(template: string, values: Record<string, string>) {

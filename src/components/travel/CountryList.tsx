@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useI18n } from '@/i18n/useI18n'
 import { cn } from '@/lib/cn'
 import type { CountryInfo } from '@/lib/travel'
+import { Flag } from '@/components/ui/Flag'
 
 type Props = {
   countries: CountryInfo[]
@@ -34,7 +35,7 @@ export function CountryList({ countries, selected, onSelect }: Props) {
                 active ? 'bg-ink text-bg' : 'bg-elevated text-muted hover:text-ink',
               )}
             >
-              <span className="text-sm leading-none">{c.flag}</span>
+              <Flag code={c.code} className="text-sm" />
               {c.name}
               <span className={cn('tabular-nums', active ? 'opacity-60' : 'text-faint')}>{c.trips.length}</span>
             </button>

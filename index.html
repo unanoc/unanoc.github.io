@@ -6,17 +6,22 @@
     <meta name="theme-color" content="#0b0b0b" />
     <title>Daniel — solo developer</title>
     <meta name="description" content="I dream up and ship apps I use every day." />
+    <link rel="canonical" href="https://unanoc.com/" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Daniel — solo developer" />
     <meta property="og:description" content="I dream up and ship apps I use every day." />
-    <meta property="og:image" content="/images/og.jpg" />
+    <meta property="og:url" content="https://unanoc.com/" />
+    <meta property="og:image" content="https://unanoc.com/images/og.jpg" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lee_daniil" />
     <script>
       try {
-        if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark')
+        if (localStorage.getItem('theme') === 'light') {
+          document.documentElement.classList.remove('dark')
+          document.querySelector('meta[name="theme-color"]').content = '#ffffff'
+        }
       } catch {}
     </script>
   </head>

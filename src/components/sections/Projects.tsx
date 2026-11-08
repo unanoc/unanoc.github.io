@@ -1,5 +1,6 @@
 import { ArrowUpRight, Plus, Rocket, Users } from 'lucide-react'
 import { projects } from '@/config'
+import { dateFormat, numberFormat, stripYearSuffix } from '@/i18n/intl'
 import { useI18n } from '@/i18n/useI18n'
 import { cn } from '@/lib/cn'
 import { useProjectUsers } from '@/lib/project-stats'
@@ -16,7 +17,7 @@ const STATUS_DOT: Record<ProjectStatus, string> = {
 
 function ProjectTile({ p, users }: { p: Project; users: number }) {
   const { intl, m, pick, fill } = useI18n()
-  const launched = new Intl.DateTimeFormat(intl, { month: 'short', year: 'numeric' }).format(new Date(p.since)).replace(' г.', '')
+  const launched = stripYearSuffix(dateFormat(intl, { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(p.since)))
 
   return (
     <article className="flex flex-col rounded-2xl border border-line bg-surface p-4 transition hover:-translate-y-0.5 hover:border-ink/15 hover:shadow-[0_6px_24px_-12px_rgb(0_0_0/0.25)]">
@@ -38,7 +39,7 @@ function ProjectTile({ p, users }: { p: Project; users: number }) {
       <div className="mt-3 flex items-center justify-between gap-2 border-t border-line pt-3 text-xs text-faint">
         <span className="inline-flex items-center gap-1.5">
           <Users className="size-3.5" />
-          <span className="font-semibold text-ink tabular-nums">{users.toLocaleString(intl)}</span>
+          <span className="font-semibold text-ink tabular-nums">{numberFormat(intl).format(users)}</span>
           {m.projects.users}
         </span>
         <span className="inline-flex items-center gap-1.5">

@@ -8,6 +8,8 @@ import { CountryList } from '@/components/travel/CountryList'
 import { focusOnCities, focusOnCity } from '@/components/travel/focus'
 import { Globe, type GlobeFlag, type GlobeMarker } from '@/components/travel/Globe'
 import { TravelDetails } from '@/components/travel/TravelDetails'
+import { Flag } from '@/components/ui/Flag'
+import { Section } from '@/components/ui/Section'
 
 export function Travel() {
   const { locale, m, pick, plural } = useI18n()
@@ -68,11 +70,7 @@ export function Travel() {
   ]
 
   return (
-    <section>
-      <div className="mb-5 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-        <h2 className="text-sm font-medium">{m.travel.title}</h2>
-        <p className="text-xs text-faint">{facts.join(' · ')}</p>
-      </div>
+    <Section title={m.travel.title} wrapMeta meta={<span className="text-xs">{facts.join(' · ')}</span>}>
 
       <div className="grid gap-4 md:grid-cols-[minmax(0,380px)_minmax(0,1fr)] md:gap-10">
         <div className="md:sticky md:top-6 md:self-start">
@@ -95,7 +93,7 @@ export function Travel() {
                 className="overflow-hidden"
               >
                 <div className="mt-3 flex items-center gap-3 rounded-xl bg-elevated px-3 py-2">
-                  <span className="text-2xl leading-none">{country.flag}</span>
+                  <Flag code={country.code} className="text-2xl" />
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-ink">{country.name}</p>
                     <p className="text-xs text-faint">
@@ -128,6 +126,6 @@ export function Travel() {
           </div>
         </div>
       </div>
-    </section>
+    </Section>
   )
 }

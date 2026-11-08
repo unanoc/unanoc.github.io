@@ -66,6 +66,7 @@ const LABEL_SPOTS: [number, number, 'left' | 'right'][] = [
   [8, 12, 'left'],
   [8, -12, 'left'],
 ]
+const PRELOAD_MARGIN = '400px'
 const SPHERE: GeoPermissibleObjects = { type: 'Sphere' }
 const GRATICULE = geoGraticule10()
 
@@ -84,10 +85,12 @@ async function fetchTopology(url: string) {
   return (await res.json()) as Topology
 }
 
-async function loadWorlds() {
-  const [coarse, fine] = await Promise.all([fetchTopology(coarseUrl), fetchTopology(fineUrl)])
+async function loadWorld(url: string) {
+  return toWorld(await fetchTopology(url))
+}
 
-  return { coarse: toWorld(coarse), fine: toWorld(fine) }
+function sphereRadius(size: number) {
+  return size / 2 - 2
 }
 
 function readPalette(): Palette {
@@ -125,7 +128,8 @@ function usePalette() {
 export function Globe({ label, visited, selected, focus, markers, flags, onCountryClick }: GlobeProps) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [worlds, setWorlds] = useState<{ coarse: World; fine: World } | null>(null)
+  const [coarse, setCoarse] = useState<World | null>(null)
+  const [fine, setFine] = useState<World | null>(null)
   const [size, setSize] = useState(0)
   const [hovering, setHovering] = useState(false)
   const palette = usePalette()
@@ -139,26 +143,44 @@ export function Globe({ label, visited, selected, focus, markers, flags, onCount
   const props = useRef({ visited, selected, markers, flags, palette, focus })
   const flagImages = useRef(new Map<string, HTMLImageElement>())
   const flagHits = useRef<{ numericId: string; x: number; y: number }[]>([])
+  const version = useRef(0)
+  const [near, setNear] = useState(false)
 
   useEffect(() => {
     props.current = { visited, selected, markers, flags, palette, focus }
-  }, [visited, selected, markers, flags, palette, focus])
+    version.current += 1
+  }, [visited, selected, markers, flags, palette, focus, fine])
 
   useEffect(() => {
     for (const f of flags) {
       if (flagImages.current.has(f.code)) continue
-      loadFlag(f.code).then((img) => img && flagImages.current.set(f.code, img))
+      loadFlag(f.code).then((img) => {
+        if (!img) return
+        flagImages.current.set(f.code, img)
+        version.current += 1
+      })
     }
   }, [flags])
 
   useEffect(() => {
+    if (!near) return
     let alive = true
-    loadWorlds().then((w) => alive && setWorlds(w))
+    loadWorld(coarseUrl).then((w) => alive && setCoarse(w))
 
     return () => {
       alive = false
     }
-  }, [])
+  }, [near])
+
+  useEffect(() => {
+    if (!focus || fine) return
+    let alive = true
+    loadWorld(fineUrl).then((w) => alive && setFine(w))
+
+    return () => {
+      alive = false
+    }
+  }, [focus, fine])
 
   useEffect(() => {
     const el = wrapRef.current
@@ -167,10 +189,20 @@ export function Globe({ label, visited, selected, focus, markers, flags, onCount
     ro.observe(el)
     const io = new IntersectionObserver(([entry]) => (visible.current = entry.isIntersecting))
     io.observe(el)
+    const preload = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return
+        setNear(true)
+        preload.disconnect()
+      },
+      { rootMargin: PRELOAD_MARGIN },
+    )
+    preload.observe(el)
 
     return () => {
       ro.disconnect()
       io.disconnect()
+      preload.disconnect()
     }
   }, [])
 
@@ -197,7 +229,7 @@ export function Globe({ label, visited, selected, focus, markers, flags, onCount
 
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas || !worlds || size === 0) return
+    if (!canvas || !coarse || size === 0) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
@@ -207,8 +239,8 @@ export function Globe({ label, visited, selected, focus, markers, flags, onCount
 
     const projection = geoOrthographic().translate([size / 2, size / 2]).precision(0.3)
     const path = geoPath(projection, ctx)
-    const baseScale = size / 2 - 2
-    const loop = { raf: 0, last: performance.now() }
+    const baseScale = sphereRadius(size)
+    const loop = { raf: 0, last: performance.now(), drawn: '' }
 
     const frame = (now: number) => {
       loop.raf = requestAnimationFrame(frame)
@@ -218,9 +250,12 @@ export function Globe({ label, visited, selected, focus, markers, flags, onCount
       const { visited: vis, selected: sel, markers: mks, flags: fls, palette: pal, focus: foc } = props.current
       const v = view.current
       if (!reduceMotion && !foc && !drag.current && now > spinPausedUntil.current) v.lng += AUTO_SPIN_DEG_PER_MS * dt
+      const key = `${v.lng}|${v.lat}|${v.zoom}|${version.current}`
+      if (key === loop.drawn) return
+      loop.drawn = key
 
       projection.scale(baseScale * v.zoom).rotate([-v.lng, -v.lat])
-      const world = v.zoom >= DETAIL_ZOOM ? worlds.fine : worlds.coarse
+      const world = v.zoom >= DETAIL_ZOOM && fine ? fine : coarse
       ctx.clearRect(0, 0, size, size)
 
       const r = baseScale * v.zoom
@@ -323,12 +358,11 @@ export function Globe({ label, visited, selected, focus, markers, flags, onCount
       path(SPHERE)
       ctx.fillStyle = rim
       ctx.fill()
-
     }
     loop.raf = requestAnimationFrame(frame)
 
     return () => cancelAnimationFrame(loop.raf)
-  }, [worlds, size, reduceMotion])
+  }, [coarse, fine, size, reduceMotion])
 
   function flagAt(clientX: number, clientY: number) {
     const rect = canvasRef.current?.getBoundingClientRect()
@@ -341,17 +375,17 @@ export function Globe({ label, visited, selected, focus, markers, flags, onCount
 
   function countryAt(clientX: number, clientY: number) {
     const canvas = canvasRef.current
-    if (!canvas || !worlds) return undefined
+    if (!canvas || !coarse) return undefined
     const rect = canvas.getBoundingClientRect()
     const v = view.current
     const projection = geoOrthographic()
       .translate([size / 2, size / 2])
-      .scale((size / 2 - 2) * v.zoom)
+      .scale(sphereRadius(size) * v.zoom)
       .rotate([-v.lng, -v.lat])
     const point = projection.invert?.([clientX - rect.left, clientY - rect.top])
     if (!point || geoDistance(point, [v.lng, v.lat]) > Math.PI / 2) return undefined
 
-    return worlds.coarse.countries.find((f) => geoContains(f, point))
+    return coarse.countries.find((f) => geoContains(f, point))
   }
 
   function onPointerDown(e: React.PointerEvent) {
@@ -363,6 +397,7 @@ export function Globe({ label, visited, selected, focus, markers, flags, onCount
   function onPointerMove(e: React.PointerEvent) {
     const d = drag.current
     if (!d) {
+      if (e.pointerType !== 'mouse') return
       const hit = countryAt(e.clientX, e.clientY)
       setHovering(Boolean(flagAt(e.clientX, e.clientY) || (hit && visited.has(String(hit.id)))))
 
@@ -398,7 +433,7 @@ export function Globe({ label, visited, selected, focus, markers, flags, onCount
 
   return (
     <div ref={wrapRef} className="relative aspect-square w-full">
-      {!worlds && <div className="absolute inset-[2px] animate-pulse rounded-full bg-elevated" />}
+      {!coarse && <div className="absolute inset-[2px] animate-pulse rounded-full bg-elevated" />}
       <canvas
         ref={canvasRef}
         className={cn('absolute inset-0 size-full touch-pan-y rounded-full [-webkit-tap-highlight-color:transparent]', hovering ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing')}

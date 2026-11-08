@@ -20,7 +20,7 @@ export type PublicProjectStats = {
   updatedAt: string
 }
 
-export type SocialKind = 'x' | 'github' | 'youtube' | 'instagram' | 'telegram' | 'email'
+export type SocialKind = 'x' | 'github' | 'youtube' | 'instagram' | 'telegram'
 
 export type Social = {
   kind: SocialKind
@@ -32,10 +32,9 @@ export type Profile = {
   name: string
   handle: string
   country: Localized
-  flag: string
+  countryCode: string
   timezone: string
   bio: Localized
-  cta: { label: string; hint: string }
 }
 
 export type Role = {
@@ -46,8 +45,4 @@ export type Role = {
 }
 
 export type ClockMood = { from: number; text: Localized }
-
-export type TimelineEntry = { date: string; title: string; text: string }
-
-export type Post = { title: string; date: string; href: string; reads?: string }
 

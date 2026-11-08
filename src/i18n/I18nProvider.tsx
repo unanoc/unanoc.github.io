@@ -11,6 +11,7 @@ export function I18nProvider({ initialLocale, children }: { initialLocale: Local
   useEffect(() => {
     document.documentElement.lang = locale
     document.title = MESSAGES[locale].meta.title
+    document.querySelector('meta[name="description"]')?.setAttribute('content', MESSAGES[locale].meta.description)
   }, [locale])
 
   const value = useMemo<I18n>(

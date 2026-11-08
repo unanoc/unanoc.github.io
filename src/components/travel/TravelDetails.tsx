@@ -3,7 +3,8 @@ import { useState } from 'react'
 import { cities, type CityId } from '@/config'
 import { useI18n } from '@/i18n/useI18n'
 import { cn } from '@/lib/cn'
-import { flagOf, formatRange, type TripView } from '@/lib/travel'
+import { formatRange, type TripView } from '@/lib/travel'
+import { Flag } from '@/components/ui/Flag'
 
 type Props = {
   trips: TripView[]
@@ -21,7 +22,11 @@ function TripRow({ trip, country, city }: { trip: TripView; country?: string; ci
 
   return (
     <li className={cn('flex items-start gap-3 py-2 transition-opacity', dimmed && 'opacity-35')}>
-      <span className="shrink-0 pt-0.5 text-base leading-none">{trip.countries.map(flagOf).join('')}</span>
+      <span className="flex shrink-0 gap-0.5 pt-1 text-sm">
+        {trip.countries.map((code) => (
+          <Flag key={code} code={code} />
+        ))}
+      </span>
       <div className="min-w-0 flex-1">
         <p className="text-[13px] leading-snug text-ink">
           {stops.map((id, i) => (
