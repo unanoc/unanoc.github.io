@@ -1,56 +1,65 @@
-import { geoContains, geoDistance, geoGraticule10, geoInterpolate, geoOrthographic, geoPath, type GeoPermissibleObjects } from 'd3-geo'
-import type { Feature, FeatureCollection, MultiLineString } from 'geojson'
-import { animate, useReducedMotion } from 'motion/react'
-import { useEffect, useRef, useState } from 'react'
-import { feature, mesh } from 'topojson-client'
-import { cn } from '@/lib/cn'
-import { loadFlag } from '@/lib/flags'
-import type { GeometryCollection, Topology } from 'topojson-specification'
-import coarseUrl from 'world-atlas/countries-110m.json?url'
-import fineUrl from 'world-atlas/countries-50m.json?url'
+import {
+  geoContains,
+  geoDistance,
+  geoGraticule10,
+  geoInterpolate,
+  geoOrthographic,
+  geoPath,
+  type GeoPermissibleObjects,
+} from "d3-geo";
+import { animate, useReducedMotion } from "motion/react";
+import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/cn";
+import { loadFlag } from "@/lib/flags";
+import type { LandDots } from "./landDots";
+import { coarseUrl, fineUrl, loadWorld, usePalette, type World } from "./world";
 
 export type GlobeMarker = {
-  id: string
-  lat: number
-  lng: number
-  label: string
-  active?: boolean
-}
+  id: string;
+  lat: number;
+  lng: number;
+  label: string;
+  active?: boolean;
+};
 
 export type GlobeFlag = {
-  code: string
-  numericId: string
-  lat: number
-  lng: number
-}
+  code: string;
+  numericId: string;
+  lat: number;
+  lng: number;
+};
 
-export type GlobeFocus = { lat: number; lng: number; zoom: number }
+export type GlobeFocus = { lat: number; lng: number; zoom: number };
 
 type GlobeProps = {
-  label: string
-  visited: Set<string>
-  selected?: string
-  focus: GlobeFocus | null
-  markers: GlobeMarker[]
-  flags: GlobeFlag[]
-  onCountryClick: (numericId: string) => void
-}
+  label: string;
+  visited: Set<string>;
+  selected?: string;
+  focus: GlobeFocus | null;
+  markers: GlobeMarker[];
+  flags: GlobeFlag[];
+  onCountryClick: (numericId: string) => void;
+};
 
-type World = { countries: Feature[]; borders: MultiLineString }
-
-type Palette = Record<'sea' | 'seaHi' | 'rim' | 'land' | 'border' | 'visited' | 'selected' | 'core' | 'label' | 'halo' | 'grid', string>
-
-const DETAIL_ZOOM = 2.2
-const AUTO_SPIN_DEG_PER_MS = 0.006
-const DRAG_DEG_PER_PX = 0.3
-const CLICK_SLOP_PX = 4
-const SPIN_RESUME_MS = 1500
-const FLY_SECONDS = 1.1
-const IDLE_TILT = 18
-const LABEL_HEIGHT = 13
-const FLAG_W = 24
-const FLAG_H = 16
-const FLAG_HIT = 16
+const DETAIL_ZOOM = 2.2;
+const DOT_RADIUS_RATIO = 0.0072;
+const MIN_DOT_RADIUS = 0.7;
+const DOT_SHADES: [number, number][] = [
+  [0.02, 0.35],
+  [0.3, 0.65],
+  [0.6, 1],
+];
+const DEG_TO_RAD = Math.PI / 180;
+const AUTO_SPIN_DEG_PER_MS = 0.006;
+const DRAG_DEG_PER_PX = 0.3;
+const CLICK_SLOP_PX = 4;
+const SPIN_RESUME_MS = 1500;
+const FLY_SECONDS = 1.1;
+const IDLE_TILT = 18;
+const LABEL_HEIGHT = 13;
+const FLAG_W = 24;
+const FLAG_H = 16;
+const FLAG_HIT = 16;
 const FLAG_NUDGES: [number, number][] = [
   [0, 0],
   [0, -21],
@@ -59,384 +68,465 @@ const FLAG_NUDGES: [number, number][] = [
   [-28, 0],
   [28, -21],
   [-28, 21],
-]
-const LABEL_SPOTS: [number, number, 'left' | 'right'][] = [
-  [8, 0, 'left'],
-  [-8, 0, 'right'],
-  [8, 12, 'left'],
-  [8, -12, 'left'],
-]
-const PRELOAD_MARGIN = '400px'
-const SPHERE: GeoPermissibleObjects = { type: 'Sphere' }
-const GRATICULE = geoGraticule10()
-
-function toWorld(topology: Topology): World {
-  const objects = topology.objects.countries as GeometryCollection
-
-  return {
-    countries: (feature(topology, objects) as FeatureCollection).features,
-    borders: mesh(topology, objects, (a, b) => a !== b),
-  }
-}
-
-async function fetchTopology(url: string) {
-  const res = await fetch(url)
-
-  return (await res.json()) as Topology
-}
-
-async function loadWorld(url: string) {
-  return toWorld(await fetchTopology(url))
-}
+];
+const LABEL_SPOTS: [number, number, "left" | "right"][] = [
+  [8, 0, "left"],
+  [-8, 0, "right"],
+  [8, 12, "left"],
+  [8, -12, "left"],
+];
+const PRELOAD_MARGIN = "400px";
+const SPHERE: GeoPermissibleObjects = { type: "Sphere" };
+const GRATICULE = geoGraticule10();
 
 function sphereRadius(size: number) {
-  return size / 2 - 2
+  return size / 2 - 2;
 }
 
-function readPalette(): Palette {
-  const css = getComputedStyle(document.documentElement)
-  const v = (name: string) => css.getPropertyValue(name).trim()
-
-  return {
-    sea: v('--globe-sea'),
-    seaHi: v('--globe-sea-hi'),
-    rim: v('--globe-rim'),
-    land: v('--globe-land'),
-    border: v('--globe-border'),
-    visited: v('--globe-visited'),
-    selected: v('--accent'),
-    core: v('--globe-core'),
-    label: v('--ink'),
-    halo: v('--bg'),
-    grid: v('--globe-grid'),
-  }
+function drawDots(
+  ctx: CanvasRenderingContext2D,
+  dots: LandDots,
+  view: { lng: number; lat: number },
+  radius: number,
+  color: string,
+  project: (lng: number, lat: number) => [number, number] | null,
+) {
+  const lam0 = view.lng * DEG_TO_RAD;
+  const sinPhi0 = Math.sin(view.lat * DEG_TO_RAD);
+  const cosPhi0 = Math.cos(view.lat * DEG_TO_RAD);
+  const dotR = Math.max(MIN_DOT_RADIUS, radius * DOT_RADIUS_RATIO);
+  const depth = new Float32Array(dots.count);
+  for (let i = 0; i < dots.count; i++)
+    depth[i] =
+      sinPhi0 * dots.sinLat[i] +
+      cosPhi0 * dots.cosLat[i] * Math.cos(dots.lngRad[i] - lam0);
+  ctx.fillStyle = color;
+  DOT_SHADES.forEach(([from, alpha], shade) => {
+    const to = DOT_SHADES[shade + 1]?.[0] ?? Number.POSITIVE_INFINITY;
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    for (let i = 0; i < dots.count; i++) {
+      if (depth[i] < from || depth[i] >= to) continue;
+      const p = project(dots.lng[i], dots.lat[i]);
+      if (!p) continue;
+      ctx.moveTo(p[0] + dotR, p[1]);
+      ctx.arc(p[0], p[1], dotR, 0, Math.PI * 2);
+    }
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
 }
 
-function usePalette() {
-  const [palette, setPalette] = useState(readPalette)
+export function Globe({
+  label,
+  visited,
+  selected,
+  focus,
+  markers,
+  flags,
+  onCountryClick,
+}: GlobeProps) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [coarse, setCoarse] = useState<World | null>(null);
+  const [fine, setFine] = useState<World | null>(null);
+  const [size, setSize] = useState(0);
+  const [hovering, setHovering] = useState(false);
+  const palette = usePalette();
+  const reduceMotion = useReducedMotion();
+
+  const view = useRef({
+    lng: markers.length
+      ? markers.reduce((sum, m) => sum + m.lng, 0) / markers.length
+      : 0,
+    lat: IDLE_TILT,
+    zoom: 1,
+  });
+  const spinPausedUntil = useRef(0);
+  const flight = useRef<{ stop: () => void } | null>(null);
+  const drag = useRef<{ x: number; y: number; moved: boolean } | null>(null);
+  const visible = useRef(true);
+  const props = useRef({ visited, selected, markers, flags, palette, focus });
+  const flagImages = useRef(new Map<string, HTMLImageElement>());
+  const flagHits = useRef<{ numericId: string; x: number; y: number }[]>([]);
+  const version = useRef(0);
+  const [near, setNear] = useState(false);
 
   useEffect(() => {
-    const observer = new MutationObserver(() => setPalette(readPalette()))
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
-
-    return () => observer.disconnect()
-  }, [])
-
-  return palette
-}
-
-export function Globe({ label, visited, selected, focus, markers, flags, onCountryClick }: GlobeProps) {
-  const wrapRef = useRef<HTMLDivElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [coarse, setCoarse] = useState<World | null>(null)
-  const [fine, setFine] = useState<World | null>(null)
-  const [size, setSize] = useState(0)
-  const [hovering, setHovering] = useState(false)
-  const palette = usePalette()
-  const reduceMotion = useReducedMotion()
-
-  const view = useRef({ lng: markers.length ? markers.reduce((sum, m) => sum + m.lng, 0) / markers.length : 0, lat: IDLE_TILT, zoom: 1 })
-  const spinPausedUntil = useRef(0)
-  const flight = useRef<{ stop: () => void } | null>(null)
-  const drag = useRef<{ x: number; y: number; moved: boolean } | null>(null)
-  const visible = useRef(true)
-  const props = useRef({ visited, selected, markers, flags, palette, focus })
-  const flagImages = useRef(new Map<string, HTMLImageElement>())
-  const flagHits = useRef<{ numericId: string; x: number; y: number }[]>([])
-  const version = useRef(0)
-  const [near, setNear] = useState(false)
-
-  useEffect(() => {
-    props.current = { visited, selected, markers, flags, palette, focus }
-    version.current += 1
-  }, [visited, selected, markers, flags, palette, focus, fine])
+    props.current = { visited, selected, markers, flags, palette, focus };
+    version.current += 1;
+  }, [visited, selected, markers, flags, palette, focus, fine]);
 
   useEffect(() => {
     for (const f of flags) {
-      if (flagImages.current.has(f.code)) continue
+      if (flagImages.current.has(f.code)) continue;
       loadFlag(f.code).then((img) => {
-        if (!img) return
-        flagImages.current.set(f.code, img)
-        version.current += 1
-      })
+        if (!img) return;
+        flagImages.current.set(f.code, img);
+        version.current += 1;
+      });
     }
-  }, [flags])
+  }, [flags]);
 
   useEffect(() => {
-    if (!near) return
-    let alive = true
-    loadWorld(coarseUrl).then((w) => alive && setCoarse(w))
+    if (!near) return;
+    let alive = true;
+    loadWorld(coarseUrl).then((w) => alive && setCoarse(w));
 
     return () => {
-      alive = false
-    }
-  }, [near])
+      alive = false;
+    };
+  }, [near]);
 
   useEffect(() => {
-    if (!focus || fine) return
-    let alive = true
-    loadWorld(fineUrl).then((w) => alive && setFine(w))
+    if (!focus || fine) return;
+    let alive = true;
+    loadWorld(fineUrl).then((w) => alive && setFine(w));
 
     return () => {
-      alive = false
-    }
-  }, [focus, fine])
+      alive = false;
+    };
+  }, [focus, fine]);
 
   useEffect(() => {
-    const el = wrapRef.current
-    if (!el) return
-    const ro = new ResizeObserver(([entry]) => setSize(Math.floor(entry.contentRect.width)))
-    ro.observe(el)
-    const io = new IntersectionObserver(([entry]) => (visible.current = entry.isIntersecting))
-    io.observe(el)
+    const el = wrapRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) =>
+      setSize(Math.floor(entry.contentRect.width)),
+    );
+    ro.observe(el);
+    const io = new IntersectionObserver(
+      ([entry]) => (visible.current = entry.isIntersecting),
+    );
+    io.observe(el);
     const preload = new IntersectionObserver(
       ([entry]) => {
-        if (!entry.isIntersecting) return
-        setNear(true)
-        preload.disconnect()
+        if (!entry.isIntersecting) return;
+        setNear(true);
+        preload.disconnect();
       },
       { rootMargin: PRELOAD_MARGIN },
-    )
-    preload.observe(el)
+    );
+    preload.observe(el);
 
     return () => {
-      ro.disconnect()
-      io.disconnect()
-      preload.disconnect()
-    }
-  }, [])
+      ro.disconnect();
+      io.disconnect();
+      preload.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
-    flight.current?.stop()
-    const from = { ...view.current }
-    const to = focus ?? { lng: from.lng, lat: IDLE_TILT, zoom: 1 }
-    const path = geoInterpolate([from.lng, from.lat], [to.lng, to.lat])
-    const logFrom = Math.log(from.zoom)
-    const logTo = Math.log(to.zoom)
+    flight.current?.stop();
+    const from = { ...view.current };
+    const to = focus ?? { lng: from.lng, lat: IDLE_TILT, zoom: 1 };
+    const path = geoInterpolate([from.lng, from.lat], [to.lng, to.lat]);
+    const logFrom = Math.log(from.zoom);
+    const logTo = Math.log(to.zoom);
     flight.current = animate(0, 1, {
       duration: reduceMotion ? 0 : FLY_SECONDS,
       ease: [0.22, 1, 0.36, 1],
       onUpdate: (t) => {
-        const [lng, lat] = path(t)
-        view.current = { lng, lat, zoom: Math.exp(logFrom + (logTo - logFrom) * t) }
+        const [lng, lat] = path(t);
+        view.current = {
+          lng,
+          lat,
+          zoom: Math.exp(logFrom + (logTo - logFrom) * t),
+        };
       },
-    })
-    if (focus) spinPausedUntil.current = Number.POSITIVE_INFINITY
-    else spinPausedUntil.current = 0
+    });
+    if (focus) spinPausedUntil.current = Number.POSITIVE_INFINITY;
+    else spinPausedUntil.current = 0;
 
-    return () => flight.current?.stop()
-  }, [focus, reduceMotion])
+    return () => flight.current?.stop();
+  }, [focus, reduceMotion]);
 
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas || !coarse || size === 0) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    const dpr = Math.min(window.devicePixelRatio || 1, 2)
-    canvas.width = size * dpr
-    canvas.height = size * dpr
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    const canvas = canvasRef.current;
+    if (!canvas || !coarse || size === 0) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const projection = geoOrthographic().translate([size / 2, size / 2]).precision(0.3)
-    const path = geoPath(projection, ctx)
-    const baseScale = sphereRadius(size)
-    const loop = { raf: 0, last: performance.now(), drawn: '' }
+    const projection = geoOrthographic()
+      .translate([size / 2, size / 2])
+      .precision(0.3);
+    const path = geoPath(projection, ctx);
+    const baseScale = sphereRadius(size);
+    const loop = { raf: 0, last: performance.now(), drawn: "" };
 
     const frame = (now: number) => {
-      loop.raf = requestAnimationFrame(frame)
-      const dt = now - loop.last
-      loop.last = now
-      if (!visible.current) return
-      const { visited: vis, selected: sel, markers: mks, flags: fls, palette: pal, focus: foc } = props.current
-      const v = view.current
-      if (!reduceMotion && !foc && !drag.current && now > spinPausedUntil.current) v.lng += AUTO_SPIN_DEG_PER_MS * dt
-      const key = `${v.lng}|${v.lat}|${v.zoom}|${version.current}`
-      if (key === loop.drawn) return
-      loop.drawn = key
+      loop.raf = requestAnimationFrame(frame);
+      const dt = now - loop.last;
+      loop.last = now;
+      if (!visible.current) return;
+      const {
+        visited: vis,
+        selected: sel,
+        markers: mks,
+        flags: fls,
+        palette: pal,
+        focus: foc,
+      } = props.current;
+      const v = view.current;
+      if (
+        !reduceMotion &&
+        !foc &&
+        !drag.current &&
+        now > spinPausedUntil.current
+      )
+        v.lng += AUTO_SPIN_DEG_PER_MS * dt;
+      const key = `${v.lng}|${v.lat}|${v.zoom}|${version.current}`;
+      if (key === loop.drawn) return;
+      loop.drawn = key;
 
-      projection.scale(baseScale * v.zoom).rotate([-v.lng, -v.lat])
-      const world = v.zoom >= DETAIL_ZOOM && fine ? fine : coarse
-      ctx.clearRect(0, 0, size, size)
+      projection.scale(baseScale * v.zoom).rotate([-v.lng, -v.lat]);
+      const world = v.zoom >= DETAIL_ZOOM && fine ? fine : coarse;
+      ctx.clearRect(0, 0, size, size);
 
-      const r = baseScale * v.zoom
-      const c = size / 2
-      const shade = Math.min(r, size)
-      const sea = ctx.createRadialGradient(c - shade * 0.3, c - shade * 0.35, shade * 0.05, c, c, shade)
-      sea.addColorStop(0, pal.seaHi)
-      sea.addColorStop(1, pal.sea)
-      ctx.beginPath()
-      path(SPHERE)
-      ctx.fillStyle = sea
-      ctx.fill()
+      const r = baseScale * v.zoom;
+      const c = size / 2;
+      const shade = Math.min(r, size);
+      const sea = ctx.createRadialGradient(
+        c - shade * 0.3,
+        c - shade * 0.35,
+        shade * 0.05,
+        c,
+        c,
+        shade,
+      );
+      sea.addColorStop(0, pal.seaHi);
+      sea.addColorStop(1, pal.sea);
+      ctx.beginPath();
+      path(SPHERE);
+      ctx.fillStyle = sea;
+      ctx.fill();
 
-      ctx.beginPath()
-      path(GRATICULE)
-      ctx.strokeStyle = pal.grid
-      ctx.lineWidth = 0.5
-      ctx.stroke()
+      ctx.beginPath();
+      path(GRATICULE);
+      ctx.strokeStyle = pal.grid;
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+
+      const detailed = v.zoom >= DETAIL_ZOOM;
+      if (!detailed)
+        drawDots(ctx, coarse.dots, v, r, pal.dot, (lng, lat) =>
+          projection([lng, lat]),
+        );
 
       for (const f of world.countries) {
-        const id = String(f.id)
-        ctx.beginPath()
-        path(f)
-        ctx.fillStyle = id === sel ? pal.selected : vis.has(id) ? pal.visited : pal.land
-        ctx.fill()
+        const id = String(f.id);
+        const isVisited = vis.has(id);
+        if (!detailed && !isVisited) continue;
+        ctx.beginPath();
+        path(f);
+        ctx.fillStyle =
+          id === sel ? pal.selected : isVisited ? pal.visited : pal.land;
+        ctx.fill();
       }
 
-      ctx.beginPath()
-      path(world.borders)
-      ctx.strokeStyle = pal.border
-      ctx.lineWidth = 0.6
-      ctx.stroke()
+      if (detailed) {
+        ctx.beginPath();
+        path(world.borders);
+        ctx.strokeStyle = pal.border;
+        ctx.lineWidth = 0.6;
+        ctx.stroke();
+      }
 
-      const center: [number, number] = [v.lng, v.lat]
-      const showAllMarkers = v.zoom >= DETAIL_ZOOM
-      ctx.font = '500 11px "Geist Variable", system-ui, sans-serif'
-      ctx.textBaseline = 'middle'
-      const placed: { x: number; y: number; w: number }[] = []
+      const center: [number, number] = [v.lng, v.lat];
+      const showAllMarkers = detailed;
+      ctx.font = '500 11px "Geist Variable", system-ui, sans-serif';
+      ctx.textBaseline = "middle";
+      const placed: { x: number; y: number; w: number }[] = [];
       for (const m of mks) {
-        if (!showAllMarkers && !m.active) continue
-        if (geoDistance([m.lng, m.lat], center) > Math.PI / 2 - 0.05) continue
-        const p = projection([m.lng, m.lat])
-        if (!p) continue
-        const [x, y] = p
-        ctx.beginPath()
-        ctx.arc(x, y, m.active ? 4.5 : 3, 0, Math.PI * 2)
-        ctx.fillStyle = pal.selected
-        ctx.fill()
-        ctx.strokeStyle = pal.core
-        ctx.lineWidth = m.active ? 2 : 1.5
-        ctx.stroke()
+        if (!showAllMarkers && !m.active) continue;
+        if (geoDistance([m.lng, m.lat], center) > Math.PI / 2 - 0.05) continue;
+        const p = projection([m.lng, m.lat]);
+        if (!p) continue;
+        const [x, y] = p;
+        ctx.beginPath();
+        ctx.arc(x, y, m.active ? 4.5 : 3, 0, Math.PI * 2);
+        ctx.fillStyle = pal.selected;
+        ctx.fill();
+        ctx.strokeStyle = pal.core;
+        ctx.lineWidth = m.active ? 2 : 1.5;
+        ctx.stroke();
         if (m.active) {
-          const w = ctx.measureText(m.label).width
-          const spot = LABEL_SPOTS.map(([dx, dy, align]) => ({ x: align === 'left' ? x + dx : x + dx - w, y: y + dy }))
-            .find((r) => !placed.some((o) => r.x < o.x + o.w && r.x + w > o.x && Math.abs(r.y - o.y) < LABEL_HEIGHT))
+          const w = ctx.measureText(m.label).width;
+          const spot = LABEL_SPOTS.map(([dx, dy, align]) => ({
+            x: align === "left" ? x + dx : x + dx - w,
+            y: y + dy,
+          })).find(
+            (r) =>
+              !placed.some(
+                (o) =>
+                  r.x < o.x + o.w &&
+                  r.x + w > o.x &&
+                  Math.abs(r.y - o.y) < LABEL_HEIGHT,
+              ),
+          );
           if (spot) {
-            placed.push({ x: spot.x, y: spot.y, w })
-            ctx.lineWidth = 3
-            ctx.strokeStyle = pal.halo
-            ctx.strokeText(m.label, spot.x, spot.y)
-            ctx.fillStyle = pal.label
-            ctx.fillText(m.label, spot.x, spot.y)
+            placed.push({ x: spot.x, y: spot.y, w });
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = pal.halo;
+            ctx.strokeText(m.label, spot.x, spot.y);
+            ctx.fillStyle = pal.label;
+            ctx.fillText(m.label, spot.x, spot.y);
           }
         }
       }
 
-      const hits: { numericId: string; x: number; y: number }[] = []
+      const hits: { numericId: string; x: number; y: number }[] = [];
       for (const f of fls) {
-        if (f.numericId === sel) continue
-        if (geoDistance([f.lng, f.lat], center) > Math.PI / 2 - 0.1) continue
-        const img = flagImages.current.get(f.code)
-        const p = projection([f.lng, f.lat])
-        if (!img || !p) continue
-        const [x, y] = FLAG_NUDGES.map(([dx, dy]) => [p[0] + dx, p[1] + dy] as const).find(
-          ([nx, ny]) => !hits.some((h) => Math.abs(h.x - nx) < FLAG_W + 4 && Math.abs(h.y - ny) < FLAG_H + 4),
-        ) ?? [p[0], p[1]]
-        ctx.save()
-        ctx.shadowColor = 'rgb(0 0 0 / 0.35)'
-        ctx.shadowBlur = 6
-        ctx.shadowOffsetY = 2
-        ctx.beginPath()
-        ctx.roundRect(x - FLAG_W / 2 - 2, y - FLAG_H / 2 - 2, FLAG_W + 4, FLAG_H + 4, 5)
-        ctx.fillStyle = pal.core
-        ctx.fill()
-        ctx.restore()
-        ctx.save()
-        ctx.beginPath()
-        ctx.roundRect(x - FLAG_W / 2, y - FLAG_H / 2, FLAG_W, FLAG_H, 3)
-        ctx.clip()
-        ctx.drawImage(img, x - FLAG_W / 2, y - FLAG_H / 2, FLAG_W, FLAG_H)
-        ctx.restore()
-        hits.push({ numericId: f.numericId, x, y })
+        if (f.numericId === sel) continue;
+        if (geoDistance([f.lng, f.lat], center) > Math.PI / 2 - 0.1) continue;
+        const img = flagImages.current.get(f.code);
+        const p = projection([f.lng, f.lat]);
+        if (!img || !p) continue;
+        const [x, y] = FLAG_NUDGES.map(
+          ([dx, dy]) => [p[0] + dx, p[1] + dy] as const,
+        ).find(
+          ([nx, ny]) =>
+            !hits.some(
+              (h) =>
+                Math.abs(h.x - nx) < FLAG_W + 4 &&
+                Math.abs(h.y - ny) < FLAG_H + 4,
+            ),
+        ) ?? [p[0], p[1]];
+        ctx.save();
+        ctx.shadowColor = "rgb(0 0 0 / 0.35)";
+        ctx.shadowBlur = 6;
+        ctx.shadowOffsetY = 2;
+        ctx.beginPath();
+        ctx.roundRect(
+          x - FLAG_W / 2 - 2,
+          y - FLAG_H / 2 - 2,
+          FLAG_W + 4,
+          FLAG_H + 4,
+          5,
+        );
+        ctx.fillStyle = pal.core;
+        ctx.fill();
+        ctx.restore();
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(x - FLAG_W / 2, y - FLAG_H / 2, FLAG_W, FLAG_H, 3);
+        ctx.clip();
+        ctx.drawImage(img, x - FLAG_W / 2, y - FLAG_H / 2, FLAG_W, FLAG_H);
+        ctx.restore();
+        hits.push({ numericId: f.numericId, x, y });
       }
-      flagHits.current = hits
+      flagHits.current = hits;
 
-      const rim = ctx.createRadialGradient(c, c, r * 0.8, c, c, r)
-      rim.addColorStop(0, 'transparent')
-      rim.addColorStop(1, pal.rim)
-      ctx.beginPath()
-      path(SPHERE)
-      ctx.fillStyle = rim
-      ctx.fill()
-    }
-    loop.raf = requestAnimationFrame(frame)
+      const rim = ctx.createRadialGradient(c, c, r * 0.8, c, c, r);
+      rim.addColorStop(0, "transparent");
+      rim.addColorStop(1, pal.rim);
+      ctx.beginPath();
+      path(SPHERE);
+      ctx.fillStyle = rim;
+      ctx.fill();
+    };
+    loop.raf = requestAnimationFrame(frame);
 
-    return () => cancelAnimationFrame(loop.raf)
-  }, [coarse, fine, size, reduceMotion])
+    return () => cancelAnimationFrame(loop.raf);
+  }, [coarse, fine, size, reduceMotion]);
 
   function flagAt(clientX: number, clientY: number) {
-    const rect = canvasRef.current?.getBoundingClientRect()
-    if (!rect) return undefined
-    const x = clientX - rect.left
-    const y = clientY - rect.top
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return undefined;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
 
-    return flagHits.current.find((h) => Math.abs(h.x - x) <= FLAG_HIT && Math.abs(h.y - y) <= FLAG_HIT)?.numericId
+    return flagHits.current.find(
+      (h) => Math.abs(h.x - x) <= FLAG_HIT && Math.abs(h.y - y) <= FLAG_HIT,
+    )?.numericId;
   }
 
   function countryAt(clientX: number, clientY: number) {
-    const canvas = canvasRef.current
-    if (!canvas || !coarse) return undefined
-    const rect = canvas.getBoundingClientRect()
-    const v = view.current
+    const canvas = canvasRef.current;
+    if (!canvas || !coarse) return undefined;
+    const rect = canvas.getBoundingClientRect();
+    const v = view.current;
     const projection = geoOrthographic()
       .translate([size / 2, size / 2])
       .scale(sphereRadius(size) * v.zoom)
-      .rotate([-v.lng, -v.lat])
-    const point = projection.invert?.([clientX - rect.left, clientY - rect.top])
-    if (!point || geoDistance(point, [v.lng, v.lat]) > Math.PI / 2) return undefined
+      .rotate([-v.lng, -v.lat]);
+    const point = projection.invert?.([
+      clientX - rect.left,
+      clientY - rect.top,
+    ]);
+    if (!point || geoDistance(point, [v.lng, v.lat]) > Math.PI / 2)
+      return undefined;
 
-    return coarse.countries.find((f) => geoContains(f, point))
+    return coarse.countries.find((f) => geoContains(f, point));
   }
 
   function onPointerDown(e: React.PointerEvent) {
-    e.currentTarget.setPointerCapture(e.pointerId)
-    drag.current = { x: e.clientX, y: e.clientY, moved: false }
-    flight.current?.stop()
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current = { x: e.clientX, y: e.clientY, moved: false };
+    flight.current?.stop();
   }
 
   function onPointerMove(e: React.PointerEvent) {
-    const d = drag.current
+    const d = drag.current;
     if (!d) {
-      if (e.pointerType !== 'mouse') return
-      const hit = countryAt(e.clientX, e.clientY)
-      setHovering(Boolean(flagAt(e.clientX, e.clientY) || (hit && visited.has(String(hit.id)))))
+      if (e.pointerType !== "mouse") return;
+      const hit = countryAt(e.clientX, e.clientY);
+      setHovering(
+        Boolean(
+          flagAt(e.clientX, e.clientY) || (hit && visited.has(String(hit.id))),
+        ),
+      );
 
-      return
+      return;
     }
-    const dx = e.clientX - d.x
-    const dy = e.clientY - d.y
-    if (Math.abs(dx) + Math.abs(dy) > CLICK_SLOP_PX) d.moved = true
-    const v = view.current
-    const k = DRAG_DEG_PER_PX / v.zoom
-    view.current = { ...v, lng: v.lng - dx * k, lat: Math.max(-80, Math.min(80, v.lat + dy * k)) }
-    d.x = e.clientX
-    d.y = e.clientY
+    const dx = e.clientX - d.x;
+    const dy = e.clientY - d.y;
+    if (Math.abs(dx) + Math.abs(dy) > CLICK_SLOP_PX) d.moved = true;
+    const v = view.current;
+    const k = DRAG_DEG_PER_PX / v.zoom;
+    view.current = {
+      ...v,
+      lng: v.lng - dx * k,
+      lat: Math.max(-80, Math.min(80, v.lat + dy * k)),
+    };
+    d.x = e.clientX;
+    d.y = e.clientY;
   }
 
   function onPointerUp(e: React.PointerEvent) {
-    const d = drag.current
-    drag.current = null
+    const d = drag.current;
+    drag.current = null;
     if (d?.moved) {
-      if (!props.current.focus) spinPausedUntil.current = performance.now() + SPIN_RESUME_MS
+      if (!props.current.focus)
+        spinPausedUntil.current = performance.now() + SPIN_RESUME_MS;
 
-      return
+      return;
     }
-    const flag = flagAt(e.clientX, e.clientY)
+    const flag = flagAt(e.clientX, e.clientY);
     if (flag) {
-      onCountryClick(flag)
+      onCountryClick(flag);
 
-      return
+      return;
     }
-    const hit = countryAt(e.clientX, e.clientY)
-    if (hit && visited.has(String(hit.id))) onCountryClick(String(hit.id))
+    const hit = countryAt(e.clientX, e.clientY);
+    if (hit && visited.has(String(hit.id))) onCountryClick(String(hit.id));
   }
 
   return (
     <div ref={wrapRef} className="relative aspect-square w-full">
-      {!coarse && <div className="absolute inset-[2px] animate-pulse rounded-full bg-elevated" />}
+      {!coarse && (
+        <div className="absolute inset-[2px] animate-pulse rounded-full bg-elevated" />
+      )}
       <canvas
         ref={canvasRef}
-        className={cn('absolute inset-0 size-full touch-pan-y rounded-full [-webkit-tap-highlight-color:transparent]', hovering ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing')}
+        className={cn(
+          "absolute inset-0 size-full touch-pan-y rounded-full [-webkit-tap-highlight-color:transparent]",
+          hovering ? "cursor-pointer" : "cursor-grab active:cursor-grabbing",
+        )}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -446,6 +536,5 @@ export function Globe({ label, visited, selected, focus, markers, flags, onCount
         role="img"
       />
     </div>
-  )
+  );
 }
-

@@ -14,6 +14,8 @@ export type Messages = {
     countries: PluralForms
     cities: PluralForms
     globe: string
+    globeView: string
+    mapView: string
   }
 }
 
@@ -43,6 +45,8 @@ const en: Messages = {
     countries: { one: '{n} country', other: '{n} countries' },
     cities: { one: '{n} city', other: '{n} cities' },
     globe: 'Globe with visited countries',
+    globeView: 'Globe',
+    mapView: 'World map',
   },
 }
 
@@ -80,6 +84,8 @@ const ru: Messages = {
     countries: { one: '{n} страна', few: '{n} страны', many: '{n} стран', other: '{n} страны' },
     cities: { one: '{n} город', few: '{n} города', many: '{n} городов', other: '{n} города' },
     globe: 'Глобус с посещёнными странами',
+    globeView: 'Глобус',
+    mapView: 'Карта мира',
   },
 }
 
@@ -109,6 +115,8 @@ const ko: Messages = {
     countries: { other: '{n}개국' },
     cities: { other: '도시 {n}곳' },
     globe: '방문한 나라가 표시된 지구본',
+    globeView: '지구본',
+    mapView: '세계 지도',
   },
 }
 
