@@ -13,12 +13,6 @@ export type Messages = {
     title: string
     countries: PluralForms
     cities: PluralForms
-    trips: PluralForms
-    daysOnRoad: PluralForms
-    days: PluralForms
-    daysShort: PluralForms
-    showAll: string
-    showLess: string
     globe: string
   }
 }
@@ -48,12 +42,6 @@ const en: Messages = {
     title: 'Travel',
     countries: { one: '{n} country', other: '{n} countries' },
     cities: { one: '{n} city', other: '{n} cities' },
-    trips: { one: '{n} trip', other: '{n} trips' },
-    daysOnRoad: { one: '{n} day on the road', other: '{n} days on the road' },
-    days: { one: '{n} day', other: '{n} days' },
-    daysShort: { other: '{n}d' },
-    showAll: 'All trips · {n}',
-    showLess: 'Show less',
     globe: 'Globe with visited countries',
   },
 }
@@ -91,17 +79,6 @@ const ru: Messages = {
     title: 'Путешествия',
     countries: { one: '{n} страна', few: '{n} страны', many: '{n} стран', other: '{n} страны' },
     cities: { one: '{n} город', few: '{n} города', many: '{n} городов', other: '{n} города' },
-    trips: { one: '{n} поездка', few: '{n} поездки', many: '{n} поездок', other: '{n} поездки' },
-    daysOnRoad: {
-      one: '{n} день в дороге',
-      few: '{n} дня в дороге',
-      many: '{n} дней в дороге',
-      other: '{n} дня в дороге',
-    },
-    days: { one: '{n} день', few: '{n} дня', many: '{n} дней', other: '{n} дня' },
-    daysShort: { other: '{n} дн' },
-    showAll: 'Все поездки · {n}',
-    showLess: 'Свернуть',
     globe: 'Глобус с посещёнными странами',
   },
 }
@@ -131,12 +108,6 @@ const ko: Messages = {
     title: '여행',
     countries: { other: '{n}개국' },
     cities: { other: '도시 {n}곳' },
-    trips: { other: '여행 {n}회' },
-    daysOnRoad: { other: '여행한 날 {n}일' },
-    days: { other: '{n}일' },
-    daysShort: { other: '{n}일' },
-    showAll: '전체 여행 · {n}',
-    showLess: '접기',
     globe: '방문한 나라가 표시된 지구본',
   },
 }

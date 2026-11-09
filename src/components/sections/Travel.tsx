@@ -2,24 +2,22 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useMemo, useState } from 'react'
 import { cities, type CityId } from '@/config'
 import { useI18n } from '@/i18n/useI18n'
-import { cn } from '@/lib/cn'
 import { buildTravel } from '@/lib/travel'
-import { CountryList } from '@/components/travel/CountryList'
+import { CountryCities } from '@/components/travel/CountryCities'
+import { FlagRow } from '@/components/travel/FlagRow'
+import { TravelStat } from '@/components/travel/TravelStat'
 import { focusOnCities, focusOnCity } from '@/components/travel/focus'
 import { Globe, type GlobeFlag, type GlobeMarker } from '@/components/travel/Globe'
-import { TravelDetails } from '@/components/travel/TravelDetails'
-import { Flag } from '@/components/ui/Flag'
 import { Section } from '@/components/ui/Section'
 
 export function Travel() {
-  const { locale, m, pick, plural } = useI18n()
+  const { locale, m, pick } = useI18n()
   const summary = useMemo(() => buildTravel(locale), [locale])
   const [countryCode, setCountryCode] = useState<string>()
   const [cityId, setCityId] = useState<CityId>()
 
   const country = summary.countries.find((c) => c.code === countryCode)
   const visited = useMemo(() => new Set(summary.countries.map((c) => c.numericId)), [summary])
-  const trips = country ? country.trips : summary.trips
 
   const focus = useMemo(() => {
     if (cityId) return focusOnCity(cities[cityId])
@@ -62,16 +60,8 @@ export function Travel() {
     if (hit) selectCountry(hit.code === countryCode ? undefined : hit.code)
   }
 
-  const facts = [
-    plural(summary.countries.length, m.travel.countries),
-    plural(summary.cityCount, m.travel.cities),
-    plural(summary.trips.length, m.travel.trips),
-    plural(summary.totalDays, m.travel.daysOnRoad),
-  ]
-
   return (
-    <Section title={m.travel.title} wrapMeta meta={<span className="text-xs">{facts.join(' · ')}</span>}>
-
+    <Section title={m.travel.title}>
       <div className="grid gap-4 md:grid-cols-[minmax(0,380px)_minmax(0,1fr)] md:gap-10">
         <div className="md:sticky md:top-6 md:self-start">
           <div className="mx-auto w-full max-w-[300px] md:max-w-[380px]">
@@ -80,50 +70,25 @@ export function Travel() {
         </div>
 
         <div className="min-w-0">
-          <CountryList countries={summary.countries} selected={countryCode} onSelect={selectCountry} />
-
-          <AnimatePresence initial={false}>
+          <div className="mb-4 flex gap-8">
+            <TravelStat n={summary.countries.length} forms={m.travel.countries} />
+            <TravelStat n={summary.cityCount} forms={m.travel.cities} />
+          </div>
+          <FlagRow countries={summary.countries} selected={countryCode} onSelect={selectCountry} />
+          <AnimatePresence mode="wait" initial={false}>
             {country && (
               <motion.div
                 key={country.code}
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.18 }}
+                className="mt-5"
               >
-                <div className="mt-3 flex items-center gap-3 rounded-xl bg-elevated px-3 py-2">
-                  <Flag code={country.code} className="text-2xl" />
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-ink">{country.name}</p>
-                    <p className="text-xs text-faint">
-                      {plural(country.trips.length, m.travel.trips)} · {plural(country.days, m.travel.days)} · {plural(country.cities.length, m.travel.cities)}
-                    </p>
-                  </div>
-                </div>
-                <div className="-mx-5 flex gap-1 overflow-x-auto px-5 pt-2.5 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0">
-                  {country.cities.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => setCityId(cityId === c.id ? undefined : c.id)}
-                      aria-pressed={cityId === c.id}
-                      className={cn(
-                        'shrink-0 rounded-md px-2 py-0.5 text-xs whitespace-nowrap transition',
-                        cityId === c.id ? 'bg-accent text-accent-ink' : 'text-muted hover:bg-elevated hover:text-ink',
-                      )}
-                    >
-                      {pick(c.city.name)}
-                      {c.visits > 1 && <span className="ml-1 opacity-60 tabular-nums">×{c.visits}</span>}
-                    </button>
-                  ))}
-                </div>
+                <CountryCities country={country} city={cityId} onCity={setCityId} />
               </motion.div>
             )}
           </AnimatePresence>
-
-          <div className="mt-4">
-            <TravelDetails key={countryCode ?? 'all'} trips={trips} country={countryCode} city={cityId} collapsible={!country} />
-          </div>
         </div>
       </div>
     </Section>

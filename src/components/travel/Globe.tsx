@@ -290,12 +290,12 @@ export function Globe({ label, visited, selected, focus, markers, flags, onCount
       ctx.stroke()
 
       const center: [number, number] = [v.lng, v.lat]
-      const showLabels = v.zoom >= DETAIL_ZOOM
+      const showAllMarkers = v.zoom >= DETAIL_ZOOM
       ctx.font = '500 11px "Geist Variable", system-ui, sans-serif'
       ctx.textBaseline = 'middle'
       const placed: { x: number; y: number; w: number }[] = []
       for (const m of mks) {
-        if (!showLabels) continue
+        if (!showAllMarkers && !m.active) continue
         if (geoDistance([m.lng, m.lat], center) > Math.PI / 2 - 0.05) continue
         const p = projection([m.lng, m.lat])
         if (!p) continue
@@ -307,7 +307,7 @@ export function Globe({ label, visited, selected, focus, markers, flags, onCount
         ctx.strokeStyle = pal.core
         ctx.lineWidth = m.active ? 2 : 1.5
         ctx.stroke()
-        if (showLabels && m.active) {
+        if (m.active) {
           const w = ctx.measureText(m.label).width
           const spot = LABEL_SPOTS.map(([dx, dy, align]) => ({ x: align === 'left' ? x + dx : x + dx - w, y: y + dy }))
             .find((r) => !placed.some((o) => r.x < o.x + o.w && r.x + w > o.x && Math.abs(r.y - o.y) < LABEL_HEIGHT))
