@@ -43,6 +43,7 @@ export const cities = {
   tashkent: { name: { en: 'Tashkent', ru: 'Ташкент', ko: '타슈켄트' }, country: 'UZ', lat: 41.2995, lng: 69.2401 },
   chisinau: { name: { en: 'Chișinău', ru: 'Кишинёв', ko: '키시너우' }, country: 'MD', lat: 47.0105, lng: 28.8638 },
   vienna: { name: { en: 'Vienna', ru: 'Вена', ko: '빈' }, country: 'AT', lat: 48.2082, lng: 16.3738 },
+  antalya: { name: { en: 'Antalya', ru: 'Анталья', ko: '안탈리아' }, country: 'TR', lat: 36.8969, lng: 30.7133 },
 } satisfies Record<string, City>
 
 export type CityId = keyof typeof cities
@@ -95,4 +96,5 @@ export const undatedVisits: CityId[] = [
   'tashkent',
   'chisinau',
   'vienna',
+  'antalya',
 ]
